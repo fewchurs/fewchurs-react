@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 — 2026-11-05
 
 - `FewchursButton` in `@fewchurs/react` and `@fewchurs/next`: shows only a button that opens the
   board in a sheet, from the side on a wide screen and from the bottom on a phone. In Next.js it

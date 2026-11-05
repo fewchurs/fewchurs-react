@@ -1,6 +1,6 @@
 {
   "name": "@fewchurs/react",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A Fewchurs feature-request board for any React app.",
   "license": "SEE LICENSE IN LICENSE",
   "type": "commonjs",
