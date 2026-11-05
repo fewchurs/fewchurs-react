@@ -1,5 +1,5 @@
 export type FewchursError =
-  | { code: "invalid_key"; status: 401; message: string }
+  | { code: "invalid_key"; status: 401 | 403; message: string }
   | { code: "validation_failed"; status: 400; message: string }
   | { code: "rate_limited"; status: 429; message: string }
   | { code: "not_found"; status: 404; message: string }
@@ -44,6 +44,8 @@ export function errorFromResponse(status: number, body: unknown): FewchursError 
   switch (code) {
     case "invalid_key":
       return { code: "invalid_key", status: 401, message };
+    case "wrong_app":
+      return { code: "invalid_key", status: 403, message };
     // missing_device_id is a client mistake the caller fixes the same way a bad field is fixed,
     // so it collapses into validation_failed rather than widening the public union.
     case "missing_device_id":

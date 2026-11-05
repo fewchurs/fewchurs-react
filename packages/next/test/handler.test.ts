@@ -22,6 +22,47 @@ function context(...route: string[]) {
 beforeEach(() => {
   process.env.FEWCHURS_API_KEY = API_KEY;
   process.env.FEWCHURS_BASE_URL = "https://api.test/v1";
+  delete process.env.FEWCHURS_APP_ID;
+});
+
+function sentHeaders(fetchMock: ReturnType<typeof upstream>) {
+  const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+  return init.headers as Record<string, string>;
+}
+
+describe("the domain the key is checked against", () => {
+  async function appIdFor(headers: Record<string, string>, options = {}) {
+    const fetchMock = upstream();
+    vi.stubGlobal("fetch", fetchMock);
+    await createHandler(options).GET(
+      request("/api/fewchurs/config", { headers }),
+      context("config"),
+    );
+    return sentHeaders(fetchMock)["X-Fewchurs-App-Id"];
+  }
+
+  it("sends the request's host without the port", async () => {
+    expect(await appIdFor({ host: "afthal.app:3000" })).toBe("afthal.app");
+  });
+
+  it("prefers the public host a reverse proxy reports", async () => {
+    const headers = { host: "localhost:3000", "x-forwarded-host": "afthal.app, proxy.internal" };
+    expect(await appIdFor(headers)).toBe("afthal.app");
+  });
+
+  it("falls back to the request URL", async () => {
+    expect(await appIdFor({})).toBe("app.test");
+  });
+
+  it("uses FEWCHURS_APP_ID over the host", async () => {
+    process.env.FEWCHURS_APP_ID = "afthal.app";
+    expect(await appIdFor({ host: "staging.other.dev" })).toBe("afthal.app");
+  });
+
+  it("uses the appId option over FEWCHURS_APP_ID", async () => {
+    process.env.FEWCHURS_APP_ID = "afthal.app";
+    expect(await appIdFor({}, { appId: "docs.afthal.app" })).toBe("docs.afthal.app");
+  });
 });
 
 describe("route handler", () => {
@@ -43,6 +84,33 @@ describe("route handler", () => {
     expect((init.headers as Record<string, string>)["X-Fewchurs-Sdk"]).toBe(
       `next/${packageJson.version}`,
     );
+  });
+
+  it("always reports itself as the Next.js SDK", async () => {
+    const fetchMock = upstream();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createHandler().GET(
+      request("/api/fewchurs/config", { headers: { "x-fewchurs-sdk": "react/1.0.0" } }),
+      context("config"),
+    );
+
+    expect(sentHeaders(fetchMock)["X-Fewchurs-Sdk"]).toBe(SDK_HEADER);
+  });
+
+  it("passes a wrong_app refusal to the browser and logs the domain once", async () => {
+    const message = "This API key is not set up for other.com.";
+    vi.stubGlobal("fetch", upstream({ error: { code: "wrong_app", message } }, 403));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { GET } = createHandler();
+    const first = await GET(request("/api/fewchurs/config"), context("config"));
+    await GET(request("/api/fewchurs/config"), context("config"));
+
+    expect(first.status).toBe(403);
+    expect(await first.json()).toEqual({ error: { code: "wrong_app", message } });
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith(`[fewchurs] ${message}`);
   });
 
   // The header is generated from package.json at build time; this catches a stale checkout.

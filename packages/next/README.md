@@ -26,9 +26,14 @@ export default function Page() {
 }
 ```
 
+Add your domain to your app in the Fewchurs dashboard. The API key only works there, and
+`localhost` always works while you build. The package reads the domain from each request. Set
+`FEWCHURS_APP_ID=yourcompany.com` when your site runs on another address, such as a preview
+deployment.
+
 - `<FewchursBoard initialFeatureId="…">` — opens the board on one request, rendered on the
   server, for a link straight to it.
-- `createHandler({ apiKey, baseUrl, apiPath, deviceId })` — the proxy, mounted wherever you like.
+- `createHandler({ apiKey, baseUrl, appId, apiPath, deviceId })` — the proxy, mounted wherever you like.
 - `@fewchurs/next/actions` — `submitFeatureAction`, `voteAction`, `commentAction`, `followAction`
   for boards built from plain forms.
 - `@fewchurs/next/identity` — the `httpOnly` device-id cookie helpers.

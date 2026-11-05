@@ -16,6 +16,8 @@ import "@fewchurs/react/styles.css";
 </FewchursProvider>;
 ```
 
+Add your domain to your app in the Fewchurs dashboard. The API key only works there.
+
 `FewchursBoardDialog` renders the same board in a modal (`open`, `onClose`, plus every board
 prop), and `initialFeatureId` opens the board on one request with its comments expanded.
 

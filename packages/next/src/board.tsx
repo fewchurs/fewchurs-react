@@ -24,6 +24,8 @@ export interface FewchursBoardProps extends SerializableBoardProps {
   /** Where your route handler is mounted. Defaults to `/api/fewchurs`. */
   apiPath?: string;
   language?: string;
+  /** The domain the API key is checked against. Defaults to `FEWCHURS_APP_ID`, then your site's host. */
+  appId?: string;
   deviceId?: DeviceIdResolver;
 }
 
@@ -32,11 +34,12 @@ export async function FewchursBoard({
   baseUrl,
   apiPath,
   language,
+  appId,
   deviceId: deviceIdOption,
   ...board
 }: FewchursBoardProps): Promise<React.JSX.Element> {
   const deviceId = await resolveDeviceId(deviceIdOption);
-  const client = serverClient(deviceId, { apiKey, baseUrl, language });
+  const client = await serverClient(deviceId, { apiKey, baseUrl, language, appId });
 
   const tab = board.defaultTab ?? board.tabs?.[0] ?? "top";
   const sort: FeatureSort = tab === "roadmap" ? "top" : tab;

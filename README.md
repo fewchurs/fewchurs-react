@@ -40,6 +40,11 @@ The board renders on the server with real data. Voting, commenting and submittin
 own route handler, which adds the key — so the key is never in the client bundle, and no CORS
 is involved.
 
+Add your domain to your app in the Fewchurs dashboard. The API key only works there, and
+`localhost` always works while you build. The package reads the domain from each request. Set
+`FEWCHURS_APP_ID=yourcompany.com` when your site runs on another address, such as a preview
+deployment. Setting it also lets you test your domain from localhost.
+
 `<FewchursBoard>` is a server component (it imports `server-only`). Importing it from a
 `"use client"` file is a build error rather than a key silently serialized into the browser
 bundle.
@@ -58,6 +63,8 @@ export function App() {
   );
 }
 ```
+
+Add your domain to your app in the Fewchurs dashboard. The API key only works there.
 
 The key is publishable here, the same way it is in the mobile SDKs — protection is server-side
 rate limiting, not secrecy. This mode needs CORS on the Fewchurs API. Until that ships, point
@@ -83,7 +90,7 @@ Hooks never throw on a failed request. Every failure is a typed value:
 
 ```ts
 type FewchursError =
-  | { code: "invalid_key"; status: 401; message: string }
+  | { code: "invalid_key"; status: 401 | 403; message: string }
   | { code: "validation_failed"; status: 400; message: string }
   | { code: "rate_limited"; status: 429; message: string }
   | { code: "not_found"; status: 404; message: string }
@@ -93,6 +100,9 @@ type FewchursError =
 ```
 
 `userMessage(error)` returns a sentence that is safe to show a visitor.
+
+A server `wrong_app` response arrives as `invalid_key` with status `403`, and `error.message` names
+the domain to add to your app in the Fewchurs dashboard.
 
 ## Customization
 

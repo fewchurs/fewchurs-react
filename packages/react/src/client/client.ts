@@ -1,5 +1,5 @@
 import { DEFAULT_BASE_URL, DEFAULT_PAGE_SIZE, SDK_HEADER } from "./constants";
-import { errorFromResponse, networkError, type Result } from "./errors";
+import { errorFromResponse, networkError, type FewchursError, type Result } from "./errors";
 import {
   normalizeComment,
   normalizeCommentPage,
@@ -31,6 +31,11 @@ export interface FewchursClientOptions {
   deviceId?: string | null | (() => string | null);
   /** Sent as `Accept-Language`, so server-side copy and emails match the visitor. */
   language?: string;
+  /**
+   * The domain the API key is checked against, for calls made from a server. A browser reports
+   * its own domain through `Origin`, which always wins, so leave this out in a SPA.
+   */
+  appId?: string;
   fetch?: FetchLike;
   retries?: number;
   retryDelayMs?: number;
@@ -82,6 +87,7 @@ export function createFewchursClient(options: FewchursClientOptions = {}): Fewch
     const deviceId = getDeviceId();
     if (deviceId) result["X-Device-Id"] = deviceId;
     if (options.language) result["Accept-Language"] = options.language;
+    if (options.appId) result["X-Fewchurs-App-Id"] = options.appId;
     return result;
   }
 
@@ -133,7 +139,7 @@ export function createFewchursClient(options: FewchursClientOptions = {}): Fewch
       }
 
       const failure = errorFromResponse(response.status, await readJson(response));
-      warnAboutKey(failure.code);
+      warnAboutKey(failure);
       return { ok: false, error: failure };
     }
 
@@ -252,11 +258,13 @@ declare const process: { env?: Record<string, string | undefined> } | undefined;
 
 let warnedAboutKey = false;
 
-function warnAboutKey(code: string): void {
-  if (code !== "invalid_key" || warnedAboutKey) return;
+function warnAboutKey(error: FewchursError): void {
+  if (error.code !== "invalid_key" || warnedAboutKey) return;
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") return;
   warnedAboutKey = true;
   console.error(
-    "[fewchurs] The API key was rejected. Check FEWCHURS_API_KEY (server) or the apiKey passed to FewchursProvider, and that the key is active in your Fewchurs dashboard.",
+    error.status === 403
+      ? `[fewchurs] ${error.message}`
+      : "[fewchurs] The API key was rejected. Check FEWCHURS_API_KEY (server) or the apiKey passed to FewchursProvider, and that the key is active in your Fewchurs dashboard.",
   );
 }

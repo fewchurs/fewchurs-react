@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.0 — 2026-11-05
+
+- `@fewchurs/react`: your API key only works on your own domains, which the browser reports through
+  `Origin`. Handles `wrong_app`: it arrives as `invalid_key` with status `403`, keeps the server's
+  message, and is logged once outside production. The `invalid_key` status type is now `401 | 403`.
+- `@fewchurs/react`: new `appId` client option for calls made from a server.
+- `@fewchurs/next`: your API key now only works on your own domains. The handler, server component
+  and server actions send your site's host as `X-Fewchurs-App-Id`. Add your domain in the Fewchurs
+  dashboard before you upgrade, or your live board will be refused. Use `FEWCHURS_APP_ID` or the
+  `appId` option for a site on another address, such as a preview deployment.
+- `@fewchurs/next`: a `wrong_app` refusal is logged once on your server, in production too. The
+  handler always sends its own `X-Fewchurs-Sdk` rather than passing on the browser's.
+
 ## 1.0.1 — 2026-10-21
 
 - The default API host is now `https://www.fewchurs.com/api/v1` (was `https://www.fewchurs.shop/api/v1`).

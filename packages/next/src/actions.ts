@@ -15,7 +15,7 @@ export interface ActionResult {
  * handler instead. Pass `path` when the page should re-render with the new data.
  */
 export async function submitFeatureAction(formData: FormData): Promise<ActionResult> {
-  const client = serverClient(await resolveDeviceId());
+  const client = await serverClient(await resolveDeviceId());
   const result = await client.submitFeature({
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
@@ -29,7 +29,7 @@ export async function submitFeatureAction(formData: FormData): Promise<ActionRes
 export async function voteAction(formData: FormData): Promise<ActionResult> {
   const featureId = String(formData.get("featureId") ?? "");
   const hasVoted = formData.get("hasVoted") === "true";
-  const client = serverClient(await resolveDeviceId());
+  const client = await serverClient(await resolveDeviceId());
   const result = hasVoted ? await client.unvote(featureId) : await client.vote(featureId);
 
   revalidate(formData);
@@ -37,7 +37,7 @@ export async function voteAction(formData: FormData): Promise<ActionResult> {
 }
 
 export async function commentAction(formData: FormData): Promise<ActionResult> {
-  const client = serverClient(await resolveDeviceId());
+  const client = await serverClient(await resolveDeviceId());
   const result = await client.createComment({
     featureId: String(formData.get("featureId") ?? ""),
     text: String(formData.get("text") ?? ""),
@@ -51,7 +51,7 @@ export async function commentAction(formData: FormData): Promise<ActionResult> {
 export async function followAction(formData: FormData): Promise<ActionResult> {
   const featureId = String(formData.get("featureId") ?? "");
   const email = optional(formData.get("email"));
-  const client = serverClient(await resolveDeviceId());
+  const client = await serverClient(await resolveDeviceId());
   const result = email ? await client.follow(featureId, email) : await client.unfollow(featureId);
 
   revalidate(formData);

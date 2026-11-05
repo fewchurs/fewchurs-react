@@ -1,12 +1,20 @@
 import "server-only";
 import { createDeviceId } from "@fewchurs/react/core";
-import { resolveApiKey, resolveApiPath, resolveBaseUrl } from "./config";
+import {
+  configuredAppId,
+  requestHostname,
+  resolveApiKey,
+  resolveApiPath,
+  resolveBaseUrl,
+} from "./config";
 import { DEVICE_ID_COOKIE, DEVICE_ID_MAX_AGE, SDK_HEADER } from "./constants";
 import type { DeviceIdResolver } from "./identity";
 
 export interface HandlerOptions {
   apiKey?: string;
   baseUrl?: string;
+  /** The domain the API key is checked against. Defaults to `FEWCHURS_APP_ID`, then your site's host. */
+  appId?: string;
   /** Where the handler is mounted, when it is not `/api/fewchurs`. */
   apiPath?: string;
   /** Return a stable, hashed id for the signed-in visitor so votes follow the account. */
@@ -68,7 +76,11 @@ export function createHandler(options: HandlerOptions = {}): {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${apiKey}`,
       "X-Device-Id": deviceId,
-      "X-Fewchurs-Sdk": request.headers.get("x-fewchurs-sdk") ?? SDK_HEADER,
+      "X-Fewchurs-Sdk": SDK_HEADER,
+      "X-Fewchurs-App-Id":
+        configuredAppId(options.appId) ??
+        requestHostname(request.headers) ??
+        new URL(request.url).hostname,
       Accept: "application/json",
     };
     const language = request.headers.get("accept-language");
@@ -84,7 +96,10 @@ export function createHandler(options: HandlerOptions = {}): {
       return json({ error: { code: "internal", message: "Could not reach Fewchurs." } }, 502);
     }
 
-    const response = new Response(await upstream.text(), {
+    const text = await upstream.text();
+    if (upstream.status === 403) logRefusal(text);
+
+    const response = new Response(text, {
       status: upstream.status,
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
@@ -106,6 +121,21 @@ const defaultHandler = createHandler();
 export const GET = defaultHandler.GET;
 export const POST = defaultHandler.POST;
 export const DELETE = defaultHandler.DELETE;
+
+let loggedRefusal = false;
+
+/** Visitors only see a safe message, so a live site's server log is where the domain gets named. */
+function logRefusal(body: string): void {
+  if (loggedRefusal) return;
+  try {
+    const error = (JSON.parse(body) as { error?: { code?: string; message?: string } }).error;
+    if (error?.code !== "wrong_app") return;
+    loggedRefusal = true;
+    console.error(`[fewchurs] ${error.message}`);
+  } catch {
+    // Not JSON, so it isn't a refusal from Fewchurs.
+  }
+}
 
 async function routePath(
   request: Request,

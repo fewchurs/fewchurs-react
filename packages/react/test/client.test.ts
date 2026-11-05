@@ -1,7 +1,8 @@
 import { http, HttpResponse } from "msw";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFewchursClient } from "../src/client/client";
 import { SDK_VERSION } from "../src/client/constants";
+import { userMessage } from "../src/client/errors";
 import packageJson from "../package.json";
 import { BASE_URL, lastRequest, rawFeature, server } from "./server";
 
@@ -81,6 +82,7 @@ describe("endpoints", () => {
 describe("errors", () => {
   it.each([
     [401, "invalid_key", "invalid_key"],
+    [403, "wrong_app", "invalid_key"],
     [400, "validation_failed", "validation_failed"],
     [400, "missing_device_id", "validation_failed"],
     [429, "rate_limited", "rate_limited"],
@@ -111,6 +113,74 @@ describe("errors", () => {
 
     expect(!result.ok && result.error.code).toBe("validation_failed");
     expect(() => lastRequest()).toThrow();
+  });
+});
+
+describe("appId", () => {
+  it("is sent when set", async () => {
+    await createFewchursClient({ baseUrl: BASE_URL, appId: "afthal.app" }).getConfig();
+    expect(lastRequest()?.headers.get("x-fewchurs-app-id")).toBe("afthal.app");
+  });
+
+  it("is left out by default, so a browser relies on Origin", async () => {
+    await client().getConfig();
+    expect(lastRequest()?.headers.has("x-fewchurs-app-id")).toBe(false);
+  });
+});
+
+describe("wrong_app", () => {
+  const message =
+    "This API key is not set up for other.com. Add it to your app in the Fewchurs dashboard.";
+
+  function refuseConfig() {
+    let calls = 0;
+    server.use(
+      http.get(`${BASE_URL}/config`, () => {
+        calls += 1;
+        return HttpResponse.json({ error: { code: "wrong_app", message } }, { status: 403 });
+      }),
+    );
+    return () => calls;
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  it("becomes invalid_key and keeps the server's message", async () => {
+    refuseConfig();
+
+    const result = await client().getConfig();
+    expect(!result.ok && result.error).toEqual({ code: "invalid_key", status: 403, message });
+  });
+
+  it("is not retried", async () => {
+    const calls = refuseConfig();
+
+    await client().getConfig();
+    expect(calls()).toBe(1);
+  });
+
+  it("shows a visitor the safe message, not the app id", async () => {
+    refuseConfig();
+
+    const result = await client().getConfig();
+    expect(!result.ok && userMessage(result.error)).toBe("Feedback is unavailable right now.");
+  });
+
+  it("logs the server's message once", async () => {
+    refuseConfig();
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.resetModules();
+    const fresh = await import("../src/client/client");
+    const freshClient = fresh.createFewchursClient({ baseUrl: BASE_URL, retryDelayMs: 0 });
+
+    await freshClient.getConfig();
+    await freshClient.getConfig();
+
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledWith(`[fewchurs] ${message}`);
   });
 });
 
