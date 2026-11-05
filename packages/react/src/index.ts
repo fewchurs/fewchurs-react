@@ -5,6 +5,8 @@ export { FewchursBoard, BoardRoot, BoardTabs, SubmitTrigger } from "./components
 export type { FewchursBoardProps } from "./components/Board";
 export { FewchursBoardDialog } from "./components/BoardDialog";
 export type { FewchursBoardDialogProps } from "./components/BoardDialog";
+export { FewchursButton } from "./components/BoardButton";
+export type { FewchursButtonProps } from "./components/BoardButton";
 export { FeatureList } from "./components/FeatureList";
 export { FeatureCard } from "./components/FeatureCard";
 export { VoteButton } from "./components/VoteButton";

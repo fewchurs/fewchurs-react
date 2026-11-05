@@ -482,3 +482,110 @@
   color: inherit;
   cursor: pointer;
 }
+
+.fw-launcher {
+  padding: 0.55rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  background: var(--fw-primary, #ed5f18);
+  border: 1px solid transparent;
+  border-radius: var(--fw-radius, 0.55rem);
+}
+
+.fw-launcher:focus-visible {
+  outline: 2px solid var(--fw-primary, #ed5f18);
+  outline-offset: 2px;
+}
+
+.fw-overlay--sheet {
+  z-index: 1000;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.fw-dialog--sheet {
+  width: min(28rem, 100%);
+  max-height: none;
+  padding: 0;
+  border-radius: 0;
+  overscroll-behavior: contain;
+  color: #18181b;
+  background: #fff;
+  animation: fw-sheet-side 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[dir="rtl"] .fw-dialog--sheet {
+  animation-name: fw-sheet-side-rtl;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fw-dialog--sheet:not([data-theme="light"]) {
+    color: #f4f4f5;
+    background: #0b0b0c;
+  }
+}
+
+.fw-dialog--sheet[data-theme="dark"] {
+  color: #f4f4f5;
+  background: #0b0b0c;
+}
+
+.fw-dialog--sheet .fw-dialog__close {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 1;
+  display: block;
+  height: 2rem;
+  margin-inline: auto 0.75rem;
+  margin-bottom: -2rem;
+}
+
+.fw-dialog--sheet > .fewchurs {
+  min-height: 100%;
+  max-width: none;
+  border-radius: 0;
+}
+
+@media (max-width: 600px) {
+  .fw-overlay--sheet {
+    align-items: flex-end;
+  }
+
+  .fw-dialog--sheet {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 1rem 1rem 0 0;
+    animation-name: fw-sheet-bottom;
+  }
+
+  .fw-dialog--sheet > .fewchurs {
+    min-height: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-dialog--sheet {
+    animation: none;
+  }
+}
+
+@keyframes fw-sheet-side {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes fw-sheet-side-rtl {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes fw-sheet-bottom {
+  from {
+    transform: translateY(100%);
+  }
+}

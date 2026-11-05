@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- `FewchursButton` in `@fewchurs/react` and `@fewchurs/next`: shows only a button that opens the
+  board in a sheet, from the side on a wide screen and from the bottom on a phone. In Next.js it
+  keeps the key on your server and does not make the page dynamic.
+- `FewchursBoardDialog` takes `variant="sheet"`.
+- `react-dom` is now a required peer dependency of `@fewchurs/react`.
+
 ## 1.1.0 — 2026-11-05
 
 - `@fewchurs/react`: your API key only works on your own domains, which the browser reports through

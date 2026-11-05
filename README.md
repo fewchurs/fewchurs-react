@@ -169,19 +169,38 @@ Wrap the client board in your own `"use client"` file when you need them.
 
 ## A button that slides the board in
 
-`FewchursBoardDialog` wraps the board in a modal, so a "Feedback" button anywhere in the app
-can open it. It takes every `FewchursBoard` prop, plus `open` and `onClose`. Escape closes it,
-clicking the backdrop closes it, and focus returns to whatever opened it.
+`FewchursButton` shows only a button. Clicking it slides the board in as a sheet: from the side on
+a wide screen, from the bottom on a phone. Nothing is fetched until it opens. Escape, the close
+button and the backdrop all close it, and focus returns to the button.
+
+In Next.js the key stays on your server, and the button works in a layout without making your
+pages dynamic:
 
 ```tsx
-const [open, setOpen] = useState(false);
+import { FewchursButton } from "@fewchurs/next";
+import "@fewchurs/next/styles.css";
 
-<button onClick={() => setOpen(true)}>Feedback</button>
-<FewchursBoardDialog open={open} onClose={() => setOpen(false)} />
+<FewchursButton />;
 ```
 
-It is a client component, so in Next.js render it from your own `"use client"` file with
-`FewchursProvider baseUrl="/api/fewchurs"` around it.
+In a React SPA, put it inside the provider:
+
+```tsx
+import { FewchursButton, FewchursProvider } from "@fewchurs/react";
+import "@fewchurs/react/styles.css";
+
+<FewchursProvider apiKey={import.meta.env.VITE_FEWCHURS_KEY}>
+  <FewchursButton />
+</FewchursProvider>;
+```
+
+Pass your own label as children, such as `<FewchursButton>Suggest a feature</FewchursButton>`.
+`className` and `style` go on the button, and every other `FewchursBoard` prop goes to the board.
+
+To open the sheet from your own button, use `FewchursBoardDialog` with `variant="sheet"`, `open`
+and `onClose`. It is a client component, so in Next.js render it from your own `"use client"` file
+with `FewchursProvider baseUrl="/api/fewchurs"` around it. Without the variant it is a centered
+modal.
 
 ## Linking to one request
 

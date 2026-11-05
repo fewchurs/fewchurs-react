@@ -1,3 +1,4 @@
+import { FewchursButton } from "@fewchurs/next";
 import Link from "next/link";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
       <p>
         <Link href="/feedback">Open the board →</Link>
       </p>
+      <FewchursButton />
     </main>
   );
 }
