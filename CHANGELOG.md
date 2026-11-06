@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 — 2026-11-06
+
+- A rejected API key no longer opens the Next.js error popup in development. The SDK logs it with
+  `console.warn`, and the board or sheet shows the error.
+
 ## 1.2.0 — 2026-11-05
 
 - `FewchursButton` in `@fewchurs/react` and `@fewchurs/next`: shows only a button that opens the
