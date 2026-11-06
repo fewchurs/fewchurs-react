@@ -22,6 +22,7 @@ export interface BoardLabels {
   loading: string;
   loadMore: string;
   retry: string;
+  close: string;
   errorInvalidKeyTitle: string;
   errorInvalidKeyDetail: string;
   errorWrongAppTitle: string;
@@ -71,6 +72,7 @@ export const DEFAULT_LABELS: BoardLabels = {
   loading: "Loading…",
   loadMore: "Load more",
   retry: "Try again",
+  close: "Close",
   errorInvalidKeyTitle: "Invalid API key",
   errorInvalidKeyDetail:
     "Copy the key from your Fewchurs dashboard (Apps → API keys) and pass it to FewchursProvider, or set FEWCHURS_API_KEY on your server.",

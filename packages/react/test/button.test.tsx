@@ -132,4 +132,24 @@ describe("FewchursButton", () => {
 
     expect(await axe(document.body)).toHaveNoViolations();
   });
+
+  it("closes only the popup on Escape when it is inside the sheet", async () => {
+    const user = userEvent.setup();
+    render(
+      <FewchursProvider apiKey="fr_live_test" baseUrl={BASE_URL} deviceId="device-1">
+        <FewchursButton />
+      </FewchursProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    const sheet = screen.getByRole("dialog", { name: "Feature requests" });
+    const [notify] = await within(sheet).findAllByRole("button", { name: "Notify me" });
+    await user.click(notify!);
+    expect(screen.getByRole("dialog", { name: "Notify me" })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Notify me" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Feature requests" })).toBeInTheDocument();
+  });
 });

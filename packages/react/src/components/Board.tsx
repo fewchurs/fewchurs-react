@@ -16,6 +16,7 @@ import {
 } from "./BoardContext";
 import { Branding } from "./Branding";
 import { FeatureList } from "./FeatureList";
+import { canAnimate } from "./motion";
 import { SubmitForm } from "./SubmitForm";
 import { mergeLabels, type BoardLabels } from "./labels";
 import { themeToStyle, type BoardTheme } from "./theme";
@@ -85,6 +86,8 @@ export function BoardRoot({
     () => ({
       labels: mergeLabels(labels),
       unstyled,
+      themeStyle: themeToStyle(theme),
+      dataTheme: colorScheme === "system" ? undefined : colorScheme,
       allowComments,
       emailField,
       showDeclined,
@@ -108,6 +111,8 @@ export function BoardRoot({
     [
       labels,
       unstyled,
+      theme,
+      colorScheme,
       allowComments,
       emailField,
       showDeclined,
@@ -154,11 +159,6 @@ function DefaultBoard(): React.JSX.Element {
 const LEAVE_MS = 110;
 const ENTER_MS = 300;
 const ENTER_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-function canAnimate(element: HTMLElement | null): element is HTMLElement {
-  if (!element || typeof element.animate !== "function") return false;
-  return !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-}
 
 function BoardPanels(): React.JSX.Element {
   const { isFormOpen, setFormOpen, justSubmitted, setJustSubmitted, labels, unstyled, cx } =

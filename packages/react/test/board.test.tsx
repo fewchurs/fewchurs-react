@@ -311,6 +311,102 @@ describe("board", () => {
     expect(post).toBeEnabled();
   });
 
+  it("opens comments in a popup that the close button closes", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    await screen.findByText("Dark mode");
+    const [button] = screen.getAllByRole("button", { name: /^Comments/ });
+    await user.click(button!);
+
+    const popup = await screen.findByRole("dialog", { name: "Comments" });
+    expect(within(popup).getByText("Dark mode")).toBeInTheDocument();
+    expect(await within(popup).findByText("Yes please")).toBeInTheDocument();
+    expect(await axe(popup)).toHaveNoViolations();
+
+    await user.click(within(popup).getByRole("button", { name: "Close" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(button).toHaveFocus();
+  });
+
+  it("closes the notify popup with Escape and the backdrop", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    const [button] = await screen.findAllByRole("button", { name: "Notify me" });
+    await user.click(button!);
+    expect(screen.getByRole("dialog", { name: "Notify me" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(button).toHaveFocus();
+
+    await user.click(button!);
+    await user.click(screen.getByRole("dialog").parentElement!);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps Tab inside the popup", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    const [button] = await screen.findAllByRole("button", { name: "Notify me" });
+    await user.click(button!);
+    const popup = screen.getByRole("dialog");
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+
+    for (let step = 0; step < 4; step += 1) {
+      await user.tab();
+      expect(popup).toContainElement(document.activeElement as HTMLElement);
+    }
+  });
+
+  it("closes the notify popup after following", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    const [button] = await screen.findAllByRole("button", { name: "Notify me" });
+    await user.click(button!);
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Notify me" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "You'll be notified" })).toHaveFocus();
+  });
+
+  it("keeps the notify popup open and says why when following fails", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${BASE_URL}/features/:id/follow`, () =>
+        HttpResponse.json({ error: { code: "rate_limited", message: "x" } }, { status: 429 }),
+      ),
+    );
+    renderBoard();
+
+    const [button] = await screen.findAllByRole("button", { name: "Notify me" });
+    await user.click(button!);
+    await user.type(screen.getByLabelText("Email"), "ada@example.com");
+    const popup = screen.getByRole("dialog");
+    await user.click(within(popup).getByRole("button", { name: "Notify me" }));
+
+    expect(await within(popup).findByRole("alert")).toHaveTextContent(
+      "You've reached today's limit.",
+    );
+    expect(screen.getByLabelText("Email")).toHaveValue("ada@example.com");
+  });
+
+  it("renders the popup in place when unstyled", async () => {
+    const user = userEvent.setup();
+    const { container } = renderBoard(<FewchursBoard unstyled />);
+
+    const [button] = await screen.findAllByRole("button", { name: "Notify me" });
+    await user.click(button!);
+
+    expect(container).toContainElement(screen.getByRole("dialog"));
+  });
+
   it("checks the email before following", async () => {
     const user = userEvent.setup();
     renderBoard();

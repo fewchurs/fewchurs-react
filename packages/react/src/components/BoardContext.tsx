@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { CSSProperties } from "react";
 import { DEFAULT_LABELS, type BoardLabels } from "./labels";
 import type { Feature, FeatureSort } from "../types";
 
@@ -16,6 +17,8 @@ export interface FeatureActions {
 export interface BoardContextValue {
   labels: BoardLabels;
   unstyled: boolean;
+  themeStyle?: CSSProperties;
+  dataTheme?: "light" | "dark";
   allowComments: boolean;
   emailField: EmailFieldMode;
   showDeclined: boolean;

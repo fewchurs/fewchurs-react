@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { userMessage } from "../client/errors";
 import { useVote } from "../hooks/useVote";
 import { useBoard } from "./BoardContext";
 import { CommentList } from "./Comments";
 import { FollowForm } from "./FollowForm";
+import { Popup } from "./Popup";
 import { StatusBadge } from "./StatusBadge";
 import { VoteButton } from "./VoteButton";
 import { formatDate } from "./time";
@@ -22,6 +23,8 @@ export function FeatureCard({
   const { labels, allowComments, cx } = useBoard();
   const { isPending, toggle, error: voteError } = useVote(feature.id);
   const [showComments, setShowComments] = useState(defaultCommentsOpen);
+  const commentsButton = useRef<HTMLButtonElement>(null);
+  const closeComments = useCallback(() => setShowComments(false), []);
 
   return (
     <li className={cx("fw-card")}>
@@ -37,10 +40,11 @@ export function FeatureCard({
 
           {allowComments && (
             <button
+              ref={commentsButton}
               type="button"
               className={cx("fw-link")}
-              aria-expanded={showComments}
-              aria-controls={`fw-comments-${feature.id}`}
+              aria-haspopup={defaultCommentsOpen ? undefined : "dialog"}
+              aria-expanded={defaultCommentsOpen ? showComments : undefined}
               onClick={() => setShowComments((open) => !open)}
             >
               {labels.comments} ({feature.commentCount})
@@ -56,10 +60,20 @@ export function FeatureCard({
           </p>
         )}
 
-        {allowComments && showComments && (
-          <div id={`fw-comments-${feature.id}`}>
+        {allowComments && defaultCommentsOpen && showComments && (
+          <CommentList featureId={feature.id} />
+        )}
+
+        {allowComments && !defaultCommentsOpen && (
+          <Popup
+            open={showComments}
+            title={labels.comments}
+            subtitle={feature.title}
+            onClose={closeComments}
+            returnFocus={commentsButton}
+          >
             <CommentList featureId={feature.id} />
-          </div>
+          </Popup>
         )}
       </div>
     </li>
