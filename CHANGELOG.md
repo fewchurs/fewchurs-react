@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 — 2026-11-06
+
+- `FewchursButton` takes `floating`, which keeps the button on the bottom right of the page, or
+  `floating="left"` for the bottom left.
+
 ## 1.2.1 — 2026-11-06
 
 - A rejected API key no longer opens the Next.js error popup in development. The SDK logs it with
