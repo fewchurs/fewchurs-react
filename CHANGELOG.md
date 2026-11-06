@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.0 — 2026-11-06
+
+- The error messages now match the other Fewchurs SDKs. `userMessage` returns the new text, and the
+  board shows a title and message for each problem: "Fewchurs isn't set up", "Invalid API key",
+  "You're offline" or "Couldn't load requests".
+- `wrong_app` now shows the server's text on screen, which names the domain to add. It used to show
+  "Wrong platform".
+- New messages for a failed next page, a failed vote, a failed unfollow, a failed comment load (with
+  **Try again**) and a linked request that no longer exists.
+- The request form shows "At least 3 characters." and "Enter a valid email address." under the
+  fields, and counts title and description characters. Submit, Post and Notify me stay off until the
+  input is valid.
+- `missing_device_id` now arrives as a `server` error instead of `validation_failed`.
+- With no API key, `FewchursBoard` from `@fewchurs/next` shows "Fewchurs isn't set up" instead of
+  throwing.
+
 ## 1.4.0 — 2026-11-06
 
 - When the board can't load, it shows a title, a friendly line and a text **Try again** button:
