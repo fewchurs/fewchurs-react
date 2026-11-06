@@ -28,6 +28,14 @@ export interface BoardLabels {
   errorWrongAppDetail: string;
   errorTitle: string;
   errorDetail: string;
+  errorOfflineTitle: string;
+  errorOfflineDetail: string;
+  errorNotSetUpTitle: string;
+  errorNotSetUpDetail: string;
+  errorLoadMore: string;
+  errorComments: string;
+  fieldTitleTooShort: string;
+  fieldEmailInvalid: string;
   comments: string;
   commentPlaceholder: string;
   postComment: string;
@@ -65,12 +73,19 @@ export const DEFAULT_LABELS: BoardLabels = {
   retry: "Try again",
   errorInvalidKeyTitle: "Invalid API key",
   errorInvalidKeyDetail:
-    "We can't connect to this board right now. The owner of this site needs to check its setup.",
-  errorWrongAppTitle: "Wrong platform",
-  errorWrongAppDetail:
-    "This board isn't set up for this site or app yet. Its owner needs to add it in Fewchurs.",
-  errorTitle: "Something went wrong",
-  errorDetail: "We couldn't load the requests. Please try again.",
+    "Copy the key from your Fewchurs dashboard (Apps → API keys) and pass it to FewchursProvider, or set FEWCHURS_API_KEY on your server.",
+  errorWrongAppTitle: "Invalid API key",
+  errorWrongAppDetail: "",
+  errorTitle: "Couldn't load requests",
+  errorDetail: "Something went wrong. Try again.",
+  errorOfflineTitle: "You're offline",
+  errorOfflineDetail: "Check your connection and try again.",
+  errorNotSetUpTitle: "Fewchurs isn't set up",
+  errorNotSetUpDetail: "Pass apiKey to FewchursProvider, or set FEWCHURS_API_KEY on your server.",
+  errorLoadMore: "Couldn't load more.",
+  errorComments: "Couldn't load comments.",
+  fieldTitleTooShort: "At least 3 characters.",
+  fieldEmailInvalid: "Enter a valid email address.",
   comments: "Comments",
   commentPlaceholder: "Add a comment",
   postComment: "Post",

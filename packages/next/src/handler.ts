@@ -1,5 +1,5 @@
 import "server-only";
-import { createDeviceId } from "@fewchurs/react/core";
+import { createDeviceId, NOT_CONFIGURED_MESSAGE } from "@fewchurs/react/core";
 import {
   configuredAppId,
   requestHostname,
@@ -65,7 +65,7 @@ export function createHandler(options: HandlerOptions = {}): {
       console.error(
         "[fewchurs] No API key. Set FEWCHURS_API_KEY, or pass apiKey to createHandler().",
       );
-      return json({ error: { code: "internal", message: "Fewchurs is not configured." } }, 500);
+      return json({ error: { code: "internal", message: NOT_CONFIGURED_MESSAGE } }, 500);
     }
 
     const cookieValue = readCookie(request, DEVICE_ID_COOKIE);

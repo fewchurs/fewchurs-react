@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LIMITS } from "../client/constants";
+import { EMAIL_PATTERN, LIMITS } from "../client/constants";
 import { userMessage } from "../client/errors";
 import { useSubmitFeature } from "../hooks/useSubmitFeature";
 import { useBoard } from "./BoardContext";
@@ -14,6 +14,11 @@ export function SubmitForm(): React.JSX.Element {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [email, setEmail] = useState(userEmail ?? "");
+
+  const isTitleValid = title.trim().length >= LIMITS.titleMin;
+  const isEmailInvalid = emailField !== "off" && email !== "" && !EMAIL_PATTERN.test(email.trim());
+  const isEmailMissing = emailField === "required" && !email.trim();
+  const canSubmit = isTitleValid && !isEmailInvalid && !isEmailMissing;
 
   return (
     <form
@@ -47,6 +52,14 @@ export function SubmitForm(): React.JSX.Element {
           onChange={(event) => setTitle(event.target.value)}
           required
         />
+        <div className={cx("fw-field__foot")}>
+          <span className={cx("fw-error")}>
+            {title !== "" && !isTitleValid ? labels.fieldTitleTooShort : ""}
+          </span>
+          <span className={cx("fw-muted")}>
+            {title.length}/{LIMITS.titleMax}
+          </span>
+        </div>
       </div>
 
       <div className={cx("fw-field")}>
@@ -61,6 +74,12 @@ export function SubmitForm(): React.JSX.Element {
           placeholder={labels.fieldDescriptionPlaceholder}
           onChange={(event) => setDescription(event.target.value)}
         />
+        <div className={cx("fw-field__foot")}>
+          <span />
+          <span className={cx("fw-muted")}>
+            {description.length}/{LIMITS.descriptionMax}
+          </span>
+        </div>
       </div>
 
       {emailField !== "off" && (
@@ -78,9 +97,15 @@ export function SubmitForm(): React.JSX.Element {
             onChange={(event) => setEmail(event.target.value)}
             required={emailField === "required"}
           />
-          <p id="fw-email-hint" className={cx("fw-muted")}>
-            {labels.fieldEmailHint}
-          </p>
+          {isEmailInvalid ? (
+            <p id="fw-email-hint" className={cx("fw-error")}>
+              {labels.fieldEmailInvalid}
+            </p>
+          ) : (
+            <p id="fw-email-hint" className={cx("fw-muted")}>
+              {labels.fieldEmailHint}
+            </p>
+          )}
         </div>
       )}
 
@@ -91,7 +116,7 @@ export function SubmitForm(): React.JSX.Element {
       )}
 
       <div className={cx("fw-form__actions")}>
-        <button type="submit" className={cx("fw-btn")} disabled={isPending}>
+        <button type="submit" className={cx("fw-btn")} disabled={isPending || !canSubmit}>
           {isPending ? labels.submitting : labels.submit}
         </button>
         <button

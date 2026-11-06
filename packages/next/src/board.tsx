@@ -8,7 +8,7 @@ import {
   type FeatureSort,
   type StoreState,
 } from "@fewchurs/react/core";
-import { resolveApiPath, serverClient } from "./config";
+import { resolveApiKey, resolveApiPath, serverClient } from "./config";
 import { resolveDeviceId, type DeviceIdResolver } from "./identity";
 
 /** Function props cannot cross the server/client boundary — compose in your own client file. */
@@ -39,6 +39,15 @@ export async function FewchursBoard({
   ...board
 }: FewchursBoardProps): Promise<React.JSX.Element> {
   const deviceId = await resolveDeviceId(deviceIdOption);
+
+  if (!resolveApiKey(apiKey)) {
+    return (
+      <FewchursProvider deviceId={deviceId} pageSize={board.pageSize ?? 20}>
+        <ClientBoard {...board} />
+      </FewchursProvider>
+    );
+  }
+
   const client = await serverClient(deviceId, { apiKey, baseUrl, language, appId });
 
   const tab = board.defaultTab ?? board.tabs?.[0] ?? "top";

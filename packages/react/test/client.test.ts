@@ -84,7 +84,7 @@ describe("errors", () => {
     [401, "invalid_key", "invalid_key"],
     [403, "wrong_app", "invalid_key"],
     [400, "validation_failed", "validation_failed"],
-    [400, "missing_device_id", "validation_failed"],
+    [400, "missing_device_id", "server"],
     [429, "rate_limited", "rate_limited"],
     [404, "not_found", "not_found"],
     [402, "limit_reached", "limit_reached"],
@@ -162,11 +162,11 @@ describe("wrong_app", () => {
     expect(calls()).toBe(1);
   });
 
-  it("shows a visitor the safe message, not the app id", async () => {
+  it("shows the server's message", async () => {
     refuseConfig();
 
     const result = await client().getConfig();
-    expect(!result.ok && userMessage(result.error)).toBe("Feedback is unavailable right now.");
+    expect(!result.ok && userMessage(result.error)).toBe(message);
   });
 
   it("logs the server's message once", async () => {
@@ -229,7 +229,7 @@ describe("logging", () => {
     await (await freshClient()).getConfig();
 
     expect(log).toHaveBeenCalledWith(
-      expect.stringMatching(/^\[fewchurs\] : The API key was rejected/),
+      "[fewchurs] : Fewchurs rejected the API key. Check the key in your dashboard (Apps → API keys).",
     );
   });
 
@@ -275,6 +275,39 @@ describe("logging", () => {
     await (await freshClient()).getConfig();
 
     expect(log).not.toHaveBeenCalled();
+  });
+});
+
+describe("userMessage", () => {
+  it.each([
+    [{ code: "network", message: "x" }, "You're offline."],
+    [
+      { code: "rate_limited", status: 429, message: "x" },
+      "You've reached today's limit. Try again tomorrow.",
+    ],
+    [
+      { code: "limit_reached", status: 402, message: "x" },
+      "This board isn't accepting requests right now.",
+    ],
+    [{ code: "not_found", status: 404, message: "x" }, "This request no longer exists."],
+    [{ code: "server", status: 500, message: "x" }, "Something went wrong. Try again."],
+    [
+      { code: "invalid_key", status: 401, message: "x" },
+      "Invalid API key. Check the key in your Fewchurs dashboard.",
+    ],
+    [{ code: "invalid_key", status: 403, message: "Not set up here." }, "Not set up here."],
+    [{ code: "validation_failed", status: 400, message: "Bad title." }, "Bad title."],
+  ] as const)("%j", (error, text) => {
+    expect(userMessage(error)).toBe(text);
+  });
+});
+
+describe("not configured", () => {
+  it("fails without a request when there is no key and no base URL", async () => {
+    const result = await createFewchursClient({ deviceId: "device-1" }).getConfig();
+
+    expect(!result.ok && result.error.message).toBe("Fewchurs is not configured.");
+    expect(() => lastRequest()).toThrow();
   });
 });
 

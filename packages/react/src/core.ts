@@ -20,7 +20,13 @@ export type {
   LoadStatus,
   StoreState,
 } from "./store/store";
-export { errorFromResponse, networkError, userMessage, validationError } from "./client/errors";
+export {
+  errorFromResponse,
+  networkError,
+  NOT_CONFIGURED_MESSAGE,
+  userMessage,
+  validationError,
+} from "./client/errors";
 export type { FewchursError, Result } from "./client/errors";
 export {
   normalizeComment,

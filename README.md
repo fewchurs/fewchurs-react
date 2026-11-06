@@ -8,10 +8,10 @@ pnpm add @fewchurs/next    # Next.js App Router
 pnpm add @fewchurs/react   # any other React app
 ```
 
-| Package | What it is | Where it runs |
-|---|---|---|
-| [`@fewchurs/react`](packages/react) | Fetch client, store, hooks, components, styles | Any React 18 or 19 app |
-| [`@fewchurs/next`](packages/next) | Server-rendered board, route handler, server actions, cookie identity | Next.js 14+ App Router |
+| Package                             | What it is                                                            | Where it runs          |
+| ----------------------------------- | --------------------------------------------------------------------- | ---------------------- |
+| [`@fewchurs/react`](packages/react) | Fetch client, store, hooks, components, styles                        | Any React 18 or 19 app |
+| [`@fewchurs/next`](packages/next)   | Server-rendered board, route handler, server actions, cookie identity | Next.js 14+ App Router |
 
 ---
 
@@ -99,14 +99,33 @@ type FewchursError =
   | { code: "network"; message: string };
 ```
 
-`userMessage(error)` returns a sentence that is safe to show a visitor.
+`userMessage(error)` returns a sentence you can show on screen:
 
-A server `wrong_app` response arrives as `invalid_key` with status `403`, and `error.message` names
-the domain to add to your app in the Fewchurs dashboard.
+| Error                       | Message                                                    |
+| --------------------------- | ---------------------------------------------------------- |
+| `network`                   | You're offline.                                            |
+| `rate_limited`              | You've reached today's limit. Try again tomorrow.          |
+| `limit_reached`             | This board isn't accepting requests right now.             |
+| `not_found`                 | This request no longer exists.                             |
+| `validation_failed`         | The reason, such as "Title must be 3–100 characters."      |
+| `invalid_key`, status `401` | Invalid API key. Check the key in your Fewchurs dashboard. |
+| `invalid_key`, status `403` | The server's text, which names the domain to add           |
+| `server`                    | Something went wrong. Try again.                           |
 
-When the board can't load, it shows a short title, a friendly line and a **Try again** button:
-"Invalid API key" for a rejected key, "Wrong platform" for `wrong_app`, and "Something went wrong"
-for anything else. Change the wording through `labels`, such as `errorInvalidKeyTitle` and
+A server `wrong_app` response arrives as `invalid_key` with status `403`.
+
+When the board can't load, it shows a title, a message and a **Try again** button:
+
+| Problem       | Title                  | Message                              |
+| ------------- | ---------------------- | ------------------------------------ |
+| No API key    | Fewchurs isn't set up  | How to pass the key (no button)      |
+| Rejected key  | Invalid API key        | Where to copy the key from           |
+| `wrong_app`   | Invalid API key        | The server's text                    |
+| Offline       | You're offline         | Check your connection and try again. |
+| Anything else | Couldn't load requests | The `userMessage` text               |
+
+The setup messages are written for the developer, and a visitor sees them if an app ships without a
+working key. Change the wording through `labels`, such as `errorInvalidKeyTitle` and
 `errorInvalidKeyDetail`. Outside production, each failed request is also logged once to the console
 as `[fewchurs] : <details>`.
 
@@ -151,9 +170,7 @@ or `<FewchursBoard theme={{ primary: "#0f766e", radius: 4 }} />`.
 <FewchursBoard
   renderHeader={() => <MyHeader />}
   renderEmpty={() => <MyEmpty />}
-  renderFeature={(feature, actions) => (
-    <MyRow feature={feature} onVote={actions.toggleVote} />
-  )}
+  renderFeature={(feature, actions) => <MyRow feature={feature} onVote={actions.toggleVote} />}
 />
 ```
 
@@ -224,7 +241,9 @@ from an email or a changelog straight to what someone voted on. `@fewchurs/next`
 request on the server too. An id that no longer exists is ignored: the list still shows.
 
 ```tsx
-<FewchursBoard initialFeatureId={new URLSearchParams(location.search).get("request") ?? undefined} />
+<FewchursBoard
+  initialFeatureId={new URLSearchParams(location.search).get("request") ?? undefined}
+/>
 ```
 
 `useFeature(featureId)` fetches one request on its own, into the same store the lists use, so

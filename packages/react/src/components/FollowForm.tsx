@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EMAIL_PATTERN } from "../client/constants";
 import { userMessage } from "../client/errors";
 import { useFollow } from "../hooks/useFollow";
 import { useBoard } from "./BoardContext";
@@ -14,14 +15,21 @@ export function FollowForm({ feature }: { feature: Feature }): React.JSX.Element
 
   if (isFollowing) {
     return (
-      <button
-        type="button"
-        className={cx("fw-link")}
-        disabled={isPending}
-        onClick={() => void unfollow()}
-      >
-        {labels.following}
-      </button>
+      <>
+        <button
+          type="button"
+          className={cx("fw-link")}
+          disabled={isPending}
+          onClick={() => void unfollow()}
+        >
+          {labels.following}
+        </button>
+        {error && (
+          <p className={cx("fw-error")} role="alert">
+            {userMessage(error)}
+          </p>
+        )}
+      </>
     );
   }
 
@@ -32,6 +40,8 @@ export function FollowForm({ feature }: { feature: Feature }): React.JSX.Element
       </button>
     );
   }
+
+  const isEmailValid = EMAIL_PATTERN.test(email.trim());
 
   return (
     <form
@@ -54,7 +64,10 @@ export function FollowForm({ feature }: { feature: Feature }): React.JSX.Element
         onChange={(event) => setEmail(event.target.value)}
         required
       />
-      <button type="submit" className={cx("fw-btn")} disabled={isPending}>
+      {email !== "" && !isEmailValid && (
+        <p className={cx("fw-error")}>{labels.fieldEmailInvalid}</p>
+      )}
+      <button type="submit" className={cx("fw-btn")} disabled={isPending || !isEmailValid}>
         {labels.follow}
       </button>
       {error && (

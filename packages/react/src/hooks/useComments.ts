@@ -20,6 +20,7 @@ export interface UseCommentsResult {
   submitError: FewchursError | null;
   hasMore: boolean;
   loadMore: () => Promise<void>;
+  refresh: () => Promise<void>;
   add: (text: string, authorName?: string) => Promise<boolean>;
 }
 
@@ -40,6 +41,8 @@ export function useComments(
   }, [store, featureId, enabled, isReady]);
 
   const loadMore = useCallback(() => store.loadMoreComments(featureId), [store, featureId]);
+
+  const refresh = useCallback(() => store.refreshComments(featureId), [store, featureId]);
 
   const add = useCallback(
     async (text: string, authorName?: string) => {
@@ -62,6 +65,7 @@ export function useComments(
     submitError,
     hasMore: comments.cursor !== null,
     loadMore,
+    refresh,
     add,
   };
 }

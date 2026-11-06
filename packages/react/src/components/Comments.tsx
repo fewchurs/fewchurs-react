@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { userMessage } from "../client/errors";
+import { isNotConfigured, userMessage } from "../client/errors";
 import { LIMITS } from "../client/constants";
 import { useComments } from "../hooks/useComments";
 import { useBoard } from "./BoardContext";
@@ -9,13 +9,26 @@ import { formatDate } from "./time";
 
 export function CommentList({ featureId }: { featureId: string }): React.JSX.Element {
   const { labels, cx } = useBoard();
-  const { comments, isLoading, isLoadingMore, error, hasMore, loadMore } = useComments(featureId);
+  const { comments, isLoading, isLoadingMore, error, hasMore, loadMore, refresh } =
+    useComments(featureId);
 
   return (
     <div className={cx("fw-comments")}>
       {isLoading && <p className={cx("fw-muted")}>{labels.loading}</p>}
 
-      {error && (
+      {error && comments.length === 0 && (
+        <div className={cx("fw-empty", "fw-empty--compact")} role="alert">
+          <p className={cx("fw-empty__title")}>{labels.errorComments}</p>
+          <p className={cx("fw-empty__detail")}>
+            {isNotConfigured(error) ? labels.errorNotSetUpTitle : userMessage(error)}
+          </p>
+          <button type="button" className={cx("fw-btn-text")} onClick={() => void refresh()}>
+            {labels.retry}
+          </button>
+        </div>
+      )}
+
+      {error && comments.length > 0 && (
         <p className={cx("fw-error")} role="alert">
           {userMessage(error)}
         </p>
@@ -94,7 +107,7 @@ export function CommentForm({ featureId }: { featureId: string }): React.JSX.Ele
           onChange={(event) => setAuthorName(event.target.value)}
         />
       </div>
-      <button type="submit" className={cx("fw-btn")} disabled={isSubmitting}>
+      <button type="submit" className={cx("fw-btn")} disabled={isSubmitting || !text.trim()}>
         {labels.postComment}
       </button>
       {submitError && (

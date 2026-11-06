@@ -1,7 +1,7 @@
 "use client";
 
 import { ROADMAP_STATUSES } from "../client/constants";
-import type { FewchursError } from "../client/errors";
+import { isNotConfigured, isWrongApp, userMessage, type FewchursError } from "../client/errors";
 import { useFeature } from "../hooks/useFeature";
 import { useFeatures } from "../hooks/useFeatures";
 import { useFollow } from "../hooks/useFollow";
@@ -13,12 +13,25 @@ import { FeatureListSkeleton } from "./Skeleton";
 import type { Feature, FeatureSort } from "../types";
 
 function errorCopy(error: FewchursError, labels: BoardLabels): { title: string; detail: string } {
-  if (error.code !== "invalid_key") {
-    return { title: labels.errorTitle, detail: labels.errorDetail };
+  if (isNotConfigured(error)) {
+    return { title: labels.errorNotSetUpTitle, detail: labels.errorNotSetUpDetail };
   }
-  return error.status === 403
-    ? { title: labels.errorWrongAppTitle, detail: labels.errorWrongAppDetail }
-    : { title: labels.errorInvalidKeyTitle, detail: labels.errorInvalidKeyDetail };
+  if (error.code === "network") {
+    return { title: labels.errorOfflineTitle, detail: labels.errorOfflineDetail };
+  }
+  if (isWrongApp(error)) {
+    return {
+      title: labels.errorWrongAppTitle,
+      detail: labels.errorWrongAppDetail || userMessage(error),
+    };
+  }
+  if (error.code === "invalid_key") {
+    return { title: labels.errorInvalidKeyTitle, detail: labels.errorInvalidKeyDetail };
+  }
+  return {
+    title: labels.errorTitle,
+    detail: error.code === "server" ? labels.errorDetail : userMessage(error),
+  };
 }
 
 export function FeatureList(): React.JSX.Element {
@@ -36,10 +49,16 @@ export function FeatureList(): React.JSX.Element {
 
 function PinnedFeature({ featureId }: { featureId: string }): React.JSX.Element | null {
   const { cx } = useBoard();
-  const { feature, isLoading } = useFeature(featureId);
+  const { feature, isLoading, error } = useFeature(featureId);
 
   if (isLoading) return <FeatureListSkeleton rows={1} />;
-  // A bad or deleted id is not an error worth a message: the list below still works.
+  if (!feature && error) {
+    return (
+      <p className={cx("fw-error", "fw-pinned")} role="alert">
+        {userMessage(error)}
+      </p>
+    );
+  }
   if (!feature) return null;
 
   return (
@@ -75,9 +94,11 @@ function Listing({ excludeId }: { excludeId?: string }): React.JSX.Element {
       <div className={cx("fw-empty")} role="alert">
         <p className={cx("fw-empty__title")}>{title}</p>
         <p className={cx("fw-empty__detail")}>{detail}</p>
-        <button type="button" className={cx("fw-btn-text")} onClick={() => void refresh()}>
-          {labels.retry}
-        </button>
+        {!isNotConfigured(error) && (
+          <button type="button" className={cx("fw-btn-text")} onClick={() => void refresh()}>
+            {labels.retry}
+          </button>
+        )}
       </div>
     );
   }
@@ -100,7 +121,16 @@ function Listing({ excludeId }: { excludeId?: string }): React.JSX.Element {
     <>
       {isRoadmap ? <RoadmapColumns features={visible} /> : <Rows features={visible} />}
 
-      {hasMore && (
+      {hasMore && error && (
+        <div className={cx("fw-pagination")} role="alert">
+          <span>{labels.errorLoadMore}</span>
+          <button type="button" className={cx("fw-btn-text")} onClick={() => void loadMore()}>
+            {labels.retry}
+          </button>
+        </div>
+      )}
+
+      {hasMore && !error && (
         <div className={cx("fw-pagination")}>
           <button
             type="button"

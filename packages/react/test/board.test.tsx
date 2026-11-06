@@ -89,17 +89,20 @@ describe("board", () => {
   });
 
   it.each([
-    [401, "invalid_key", "Invalid API key", "needs to check its setup"],
-    [403, "wrong_app", "Wrong platform", "isn't set up for this site or app"],
-    [500, "internal", "Something went wrong", "Please try again"],
-    [429, "rate_limited", "Something went wrong", "Please try again"],
-  ])("shows a %i %s as a title and friendly detail", async (status, code, title, detail) => {
+    [401, "invalid_key", "Invalid API key", "Copy the key from your Fewchurs dashboard"],
+    [401, "unauthorized", "Invalid API key", "Copy the key from your Fewchurs dashboard"],
+    [403, "wrong_app", "Invalid API key", "Server text."],
+    [500, "internal", "Couldn't load requests", "Something went wrong. Try again."],
+    [400, "missing_device_id", "Couldn't load requests", "Something went wrong. Try again."],
+    [403, "forbidden", "Couldn't load requests", "Something went wrong. Try again."],
+    [429, "rate_limited", "Couldn't load requests", "You've reached today's limit."],
+    [402, "limit_reached", "Couldn't load requests", "This board isn't accepting requests"],
+    [404, "not_found", "Couldn't load requests", "This request no longer exists."],
+    [400, "validation_failed", "Couldn't load requests", "Server text."],
+  ])("shows a %i %s with its title and message", async (status, code, title, detail) => {
     server.use(
       http.get(`${BASE_URL}/features`, () =>
-        HttpResponse.json(
-          { error: { code, message: "This API key is not set up for secret-host.com." } },
-          { status },
-        ),
+        HttpResponse.json({ error: { code, message: "Server text." } }, { status }),
       ),
     );
     renderBoard();
@@ -107,8 +110,163 @@ describe("board", () => {
     const alert = await screen.findByRole("alert");
     expect(within(alert).getByText(title)).toHaveClass("fw-empty__title");
     expect(alert).toHaveTextContent(detail);
-    expect(alert).not.toHaveTextContent("secret-host.com");
     expect(within(alert).getByRole("button", { name: "Try again" })).toHaveClass("fw-btn-text");
+  });
+
+  it("says when the visitor is offline", async () => {
+    server.use(http.get(`${BASE_URL}/features`, () => HttpResponse.error()));
+    renderBoard();
+
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText("You're offline")).toBeInTheDocument();
+    expect(alert).toHaveTextContent("Check your connection and try again.");
+    expect(within(alert).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("says when Fewchurs isn't set up, with no button", async () => {
+    render(
+      <FewchursProvider deviceId="device-1">
+        <FewchursBoard />
+      </FewchursProvider>,
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText("Fewchurs isn't set up")).toBeInTheDocument();
+    expect(within(alert).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("offers Try again when the next page fails", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(`${BASE_URL}/features`, ({ request }) => {
+        if (new URL(request.url).searchParams.get("cursor")) {
+          return HttpResponse.json({ error: { code: "internal", message: "x" } }, { status: 500 });
+        }
+        return HttpResponse.json({
+          features: [rawFeature({ id: "a", title: "Dark mode" })],
+          nextCursor: "page2",
+        });
+      }),
+    );
+    renderBoard();
+
+    await user.click(await screen.findByRole("button", { name: "Load more" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Couldn't load more.");
+    expect(within(alert).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(screen.getByText("Dark mode")).toBeInTheDocument();
+  });
+
+  it("undoes a failed vote and says why", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${BASE_URL}/features/:id/vote`, () =>
+        HttpResponse.json({ error: { code: "rate_limited", message: "x" } }, { status: 429 }),
+      ),
+    );
+    renderBoard();
+
+    const button = await screen.findByRole("button", { name: "Upvote Dark mode" });
+    await user.click(button);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "You've reached today's limit. Try again tomorrow.",
+    );
+    expect(button).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("offers Try again when comments fail to load", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(
+        `${BASE_URL}/features/:id/comments`,
+        () => HttpResponse.json({ error: { code: "internal", message: "x" } }, { status: 500 }),
+        { once: true },
+      ),
+      http.get(
+        `${BASE_URL}/features/:id/comments`,
+        () => HttpResponse.json({ error: { code: "internal", message: "x" } }, { status: 500 }),
+        { once: true },
+      ),
+    );
+    renderBoard(<FewchursBoard initialFeatureId="b" />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Couldn't load comments.");
+    expect(alert).toHaveTextContent("Something went wrong. Try again.");
+
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("Yes please")).toBeInTheDocument();
+  });
+
+  it("keeps submit off until the title is long enough", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    await user.click(await screen.findByRole("button", { name: "New request" }));
+    const submit = screen.getByRole("button", { name: "Submit request" });
+    expect(submit).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Title"), "ab");
+    expect(screen.getByText("At least 3 characters.")).toBeInTheDocument();
+    expect(screen.getByText("2/100")).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Title"), "c");
+    expect(screen.queryByText("At least 3 characters.")).not.toBeInTheDocument();
+    expect(submit).toBeEnabled();
+  });
+
+  it("keeps the form filled and says why when submit fails", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${BASE_URL}/features`, () =>
+        HttpResponse.json({ error: { code: "limit_reached", message: "x" } }, { status: 402 }),
+      ),
+    );
+    renderBoard();
+
+    await user.click(await screen.findByRole("button", { name: "New request" }));
+    await user.type(screen.getByLabelText("Title"), "Offline mode");
+    await user.click(screen.getByRole("button", { name: "Submit request" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This board isn't accepting requests right now.",
+    );
+    expect(screen.getByLabelText("Title")).toHaveValue("Offline mode");
+  });
+
+  it("keeps Post off until there is a comment", async () => {
+    const user = userEvent.setup();
+    renderBoard(<FewchursBoard initialFeatureId="b" />);
+
+    const post = await screen.findByRole("button", { name: "Post" });
+    expect(post).toBeDisabled();
+
+    await user.type(screen.getByPlaceholderText("Add a comment"), "Hello");
+    expect(post).toBeEnabled();
+  });
+
+  it("checks the email before following", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    const [notify] = await screen.findAllByRole("button", { name: "Notify me" });
+    await user.click(notify!);
+
+    const email = screen.getByLabelText("Email");
+    const follow = within(email.closest("form")!).getByRole("button", { name: "Notify me" });
+    expect(follow).toBeDisabled();
+
+    await user.type(email, "nope");
+    expect(screen.getByText("Enter a valid email address.")).toBeInTheDocument();
+    expect(follow).toBeDisabled();
+
+    await user.type(email, "@example.com");
+    expect(screen.queryByText("Enter a valid email address.")).not.toBeInTheDocument();
+    expect(follow).toBeEnabled();
   });
 
   it("loads the list when Try again works", async () => {
@@ -251,11 +409,11 @@ describe("board", () => {
     expect(await within(pinned).findByText("Yes please")).toBeInTheDocument();
   });
 
-  it("still shows the list when the linked request is gone", async () => {
-    const { container } = renderBoard(<FewchursBoard initialFeatureId="missing" />);
+  it("says the linked request is gone and still shows the list", async () => {
+    renderBoard(<FewchursBoard initialFeatureId="missing" />);
 
+    expect(await screen.findByRole("alert")).toHaveTextContent("This request no longer exists.");
     expect(await screen.findByText("Dark mode")).toBeInTheDocument();
-    expect(container.querySelector(".fw-pinned")).toBeNull();
   });
 
   it("has no obvious accessibility violations", async () => {

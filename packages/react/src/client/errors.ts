@@ -13,19 +13,34 @@ interface ServerErrorBody {
   error?: { code?: string; message?: string };
 }
 
+export const NOT_CONFIGURED_MESSAGE = "Fewchurs is not configured.";
+
 const USER_MESSAGES: Record<FewchursError["code"], string> = {
-  invalid_key: "Feedback is unavailable right now.",
-  validation_failed: "Please check what you entered and try again.",
-  rate_limited: "You have reached today's limit. Try again tomorrow.",
-  not_found: "That request no longer exists.",
-  limit_reached: "Feedback is unavailable right now.",
-  server: "Something went wrong. Please try again.",
-  network: "Could not reach the server. Check your connection.",
+  invalid_key: "Invalid API key. Check the key in your Fewchurs dashboard.",
+  validation_failed: "Invalid input.",
+  rate_limited: "You've reached today's limit. Try again tomorrow.",
+  not_found: "This request no longer exists.",
+  limit_reached: "This board isn't accepting requests right now.",
+  server: "Something went wrong. Try again.",
+  network: "You're offline.",
 };
 
-/** Safe to show a visitor: never leaks a server message that may name internals. */
+export function isWrongApp(error: FewchursError): boolean {
+  return error.code === "invalid_key" && error.status === 403;
+}
+
+export function isNotConfigured(error: FewchursError): boolean {
+  return error.code === "server" && error.message === NOT_CONFIGURED_MESSAGE;
+}
+
+export function notConfiguredError(): FewchursError {
+  return { code: "server", status: 500, message: NOT_CONFIGURED_MESSAGE };
+}
+
+/** Safe to show a visitor. Only validation and `wrong_app` use the server's own text. */
 export function userMessage(error: FewchursError): string {
   if (error.code === "validation_failed" && error.message) return error.message;
+  if (isWrongApp(error) && error.message) return error.message;
   return USER_MESSAGES[error.code];
 }
 
@@ -39,18 +54,18 @@ export function validationError(message: string): FewchursError {
 
 export function errorFromResponse(status: number, body: unknown): FewchursError {
   const code = (body as ServerErrorBody | null)?.error?.code;
-  const message = (body as ServerErrorBody | null)?.error?.message ?? `Request failed (${status}).`;
+  const serverMessage = (body as ServerErrorBody | null)?.error?.message;
+  const message = serverMessage ?? `Request failed (${status}).`;
 
   switch (code) {
     case "invalid_key":
       return { code: "invalid_key", status: 401, message };
     case "wrong_app":
       return { code: "invalid_key", status: 403, message };
-    // missing_device_id is a client mistake the caller fixes the same way a bad field is fixed,
-    // so it collapses into validation_failed rather than widening the public union.
     case "missing_device_id":
+      return { code: "server", status: 400, message };
     case "validation_failed":
-      return { code: "validation_failed", status: 400, message };
+      return { code: "validation_failed", status: 400, message: serverMessage ?? "Invalid input." };
     case "rate_limited":
       return { code: "rate_limited", status: 429, message };
     case "not_found":

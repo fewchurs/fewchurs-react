@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { userMessage } from "../client/errors";
 import { useVote } from "../hooks/useVote";
 import { useBoard } from "./BoardContext";
 import { CommentList } from "./Comments";
@@ -19,7 +20,7 @@ export function FeatureCard({
   defaultCommentsOpen?: boolean;
 }): React.JSX.Element {
   const { labels, allowComments, cx } = useBoard();
-  const { isPending, toggle } = useVote(feature.id);
+  const { isPending, toggle, error: voteError } = useVote(feature.id);
   const [showComments, setShowComments] = useState(defaultCommentsOpen);
 
   return (
@@ -48,6 +49,12 @@ export function FeatureCard({
 
           <FollowForm feature={feature} />
         </div>
+
+        {voteError && (
+          <p className={cx("fw-error")} role="alert">
+            {userMessage(voteError)}
+          </p>
+        )}
 
         {allowComments && showComments && (
           <div id={`fw-comments-${feature.id}`}>

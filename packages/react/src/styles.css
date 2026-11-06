@@ -323,6 +323,27 @@
   margin: 0 0 0.75rem;
 }
 
+.fewchurs .fw-empty--compact {
+  padding: 0.75rem 0;
+}
+
+.fewchurs .fw-field__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.fewchurs .fw-meta .fw-error {
+  flex-basis: 100%;
+}
+
+.fewchurs .fw-pagination[role="alert"] {
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--fw-subtle);
+}
+
 .fewchurs .fw-btn-text {
   padding: 0.45rem 0.75rem;
   font: inherit;

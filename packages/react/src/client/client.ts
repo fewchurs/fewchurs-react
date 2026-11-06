@@ -1,5 +1,12 @@
 import { DEFAULT_BASE_URL, DEFAULT_PAGE_SIZE, SDK_HEADER } from "./constants";
-import { errorFromResponse, networkError, type FewchursError, type Result } from "./errors";
+import {
+  errorFromResponse,
+  isNotConfigured,
+  networkError,
+  notConfiguredError,
+  type FewchursError,
+  type Result,
+} from "./errors";
 import {
   normalizeComment,
   normalizeCommentPage,
@@ -73,6 +80,8 @@ export function createFewchursClient(options: FewchursClientOptions = {}): Fewch
   const retries = options.retries ?? 1;
   const retryDelayMs = options.retryDelayMs ?? 250;
 
+  if (options.apiKey && !options.apiKey.startsWith("fr_")) logOnce(BAD_KEY_PREFIX);
+
   function getDeviceId(): string | null {
     return typeof options.deviceId === "function" ? options.deviceId() : (options.deviceId ?? null);
   }
@@ -106,6 +115,11 @@ export function createFewchursClient(options: FewchursClientOptions = {}): Fewch
     { method = "GET", body, query, signal }: RequestOptions = {},
   ): Promise<Result<T>> {
     if (!doFetch) return { ok: false, error: networkError("No fetch implementation available.") };
+    if (!options.apiKey && options.baseUrl === undefined) {
+      const failure = notConfiguredError();
+      logError(failure);
+      return { ok: false, error: failure };
+    }
 
     const target = url(path, query);
     const init: RequestInit = { method, headers: headers(body !== undefined) };
@@ -259,15 +273,24 @@ function messageOf(error: unknown): string {
 declare const process: { env?: Record<string, string | undefined> } | undefined;
 
 const INVALID_KEY_HELP =
-  "The API key was rejected. Check FEWCHURS_API_KEY (server) or the apiKey passed to FewchursProvider, and that the key is active in your Fewchurs dashboard.";
+  "Fewchurs rejected the API key. Check the key in your dashboard (Apps → API keys).";
+
+const NOT_CONFIGURED_HELP =
+  "Fewchurs is not configured. Pass apiKey to FewchursProvider, or set FEWCHURS_API_KEY on your server.";
+
+const BAD_KEY_PREFIX = 'The Fewchurs API key should start with "fr_". Copy it from your dashboard.';
 
 const loggedErrors = new Set<string>();
 
-function logError(error: FewchursError): void {
+function logOnce(detail: string): void {
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") return;
-  const isInvalidKey = error.code === "invalid_key" && error.status === 401;
-  const detail = isInvalidKey ? INVALID_KEY_HELP : error.message;
   if (loggedErrors.has(detail)) return;
   loggedErrors.add(detail);
   console.warn(`[fewchurs] : ${detail}`);
+}
+
+function logError(error: FewchursError): void {
+  if (isNotConfigured(error)) return logOnce(NOT_CONFIGURED_HELP);
+  const isInvalidKey = error.code === "invalid_key" && error.status === 401;
+  logOnce(isInvalidKey ? INVALID_KEY_HELP : error.message);
 }

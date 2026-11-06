@@ -4,11 +4,8 @@ import type { CreateCommentInput, SubmitFeatureInput } from "../types";
 
 export function validateFeatureInput(input: SubmitFeatureInput): FewchursError | null {
   const title = input.title.trim();
-  if (title.length < LIMITS.titleMin) {
-    return validationError(`Title must be at least ${LIMITS.titleMin} characters.`);
-  }
-  if (title.length > LIMITS.titleMax) {
-    return validationError(`Title must be at most ${LIMITS.titleMax} characters.`);
+  if (title.length < LIMITS.titleMin || title.length > LIMITS.titleMax) {
+    return validationError(`Title must be ${LIMITS.titleMin}–${LIMITS.titleMax} characters.`);
   }
   if ((input.description ?? "").trim().length > LIMITS.descriptionMax) {
     return validationError(`Description must be at most ${LIMITS.descriptionMax} characters.`);
@@ -21,9 +18,8 @@ export function validateFeatureInput(input: SubmitFeatureInput): FewchursError |
 
 export function validateCommentInput(input: CreateCommentInput): FewchursError | null {
   const text = input.text.trim();
-  if (text.length < LIMITS.commentMin) return validationError("Write a comment first.");
-  if (text.length > LIMITS.commentMax) {
-    return validationError(`Comment must be at most ${LIMITS.commentMax} characters.`);
+  if (text.length < LIMITS.commentMin || text.length > LIMITS.commentMax) {
+    return validationError(`Comment must be ${LIMITS.commentMin}–${LIMITS.commentMax} characters.`);
   }
   if ((input.authorName ?? "").trim().length > LIMITS.authorNameMax) {
     return validationError(`Name must be at most ${LIMITS.authorNameMax} characters.`);
