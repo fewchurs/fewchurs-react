@@ -201,6 +201,68 @@ describe("board", () => {
     expect(await screen.findByText("Yes please")).toBeInTheDocument();
   });
 
+  it("shows only the form, and the list again after Cancel", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    const list = await screen.findByText("Dark mode");
+    await user.click(screen.getByRole("button", { name: "New request" }));
+
+    expect(screen.getByLabelText("Title")).toHaveFocus();
+    expect(list).not.toBeVisible();
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "New request" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(list).toBeVisible();
+    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New request" })).toHaveFocus();
+  });
+
+  it("focuses the title even with an open comment box in the list", async () => {
+    const user = userEvent.setup();
+    renderBoard(<FewchursBoard initialFeatureId="b" />);
+
+    await screen.findByPlaceholderText("Add a comment");
+    await user.click(screen.getByRole("button", { name: "New request" }));
+
+    expect(screen.getByLabelText("Title")).toHaveFocus();
+  });
+
+  it("shows the list and the thanks message after a request is sent", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    const list = await screen.findByText("Dark mode");
+    await user.click(screen.getByRole("button", { name: "New request" }));
+    await user.type(screen.getByLabelText("Title"), "Offline mode");
+    await user.click(screen.getByRole("button", { name: "Submit request" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Thanks — your request is in.");
+    expect(list).toBeVisible();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+  });
+
+  it("keeps the form open when the request fails", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${BASE_URL}/features`, () =>
+        HttpResponse.json({ error: { code: "internal", message: "x" } }, { status: 500 }),
+      ),
+    );
+    renderBoard();
+
+    const list = await screen.findByText("Dark mode");
+    await user.click(screen.getByRole("button", { name: "New request" }));
+    await user.type(screen.getByLabelText("Title"), "Offline mode");
+    await user.click(screen.getByRole("button", { name: "Submit request" }));
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(list).not.toBeVisible();
+  });
+
   it("keeps submit off until the title is long enough", async () => {
     const user = userEvent.setup();
     renderBoard();

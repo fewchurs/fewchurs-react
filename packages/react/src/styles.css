@@ -600,6 +600,7 @@
 }
 
 .fw-dialog--sheet > .fewchurs {
+  box-sizing: border-box;
   min-height: 100%;
   max-width: none;
   border-radius: 0;

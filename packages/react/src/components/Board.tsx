@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { useFewchurs } from "../context/provider";
 import { useFewchursConfig } from "../hooks/useFewchursConfig";
 import {
@@ -139,24 +140,111 @@ export function BoardRoot({
 }
 
 function DefaultBoard(): React.JSX.Element {
-  const { isFormOpen, justSubmitted, labels, renderHeader, cx } = useBoard();
+  const { renderHeader } = useBoard();
 
   return (
     <>
       {renderHeader ? renderHeader() : <BoardHeading />}
-      <div className={cx("fw-toolbar")}>
-        <BoardTabs />
-        <SubmitTrigger />
-      </div>
-      {justSubmitted && (
-        <p className={cx("fw-alert")} role="status">
-          {labels.submitted}
-        </p>
-      )}
-      {isFormOpen && <SubmitForm />}
-      <FeatureList />
+      <BoardPanels />
       <Branding />
     </>
+  );
+}
+
+const LEAVE_MS = 110;
+const ENTER_MS = 300;
+const ENTER_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+function canAnimate(element: HTMLElement | null): element is HTMLElement {
+  if (!element || typeof element.animate !== "function") return false;
+  return !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+function BoardPanels(): React.JSX.Element {
+  const { isFormOpen, setFormOpen, justSubmitted, setJustSubmitted, labels, unstyled, cx } =
+    useBoard();
+  const [showForm, setShowForm] = useState(isFormOpen);
+  const panel = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const entering = useRef<Animation | null>(null);
+  const hasSwapped = useRef(false);
+
+  useEffect(() => {
+    if (isFormOpen === showForm) return;
+    hasSwapped.current = true;
+
+    const element = panel.current;
+    if (unstyled || !canAnimate(element)) {
+      setShowForm(isFormOpen);
+      return;
+    }
+
+    entering.current?.cancel();
+    const leaving = element.animate(
+      { opacity: [1, 0], transform: ["translateY(0)", "translateY(-4px)"] },
+      { duration: LEAVE_MS, easing: "ease-in", fill: "forwards" },
+    );
+
+    leaving.onfinish = () => {
+      const from = element.offsetHeight;
+      flushSync(() => setShowForm(isFormOpen));
+      leaving.cancel();
+      const to = element.offsetHeight;
+
+      element.style.overflow = "hidden";
+      const enter = element.animate(
+        {
+          opacity: [0, 1],
+          transform: ["translateY(6px)", "translateY(0)"],
+          height: [`${from}px`, `${to}px`],
+        },
+        { duration: ENTER_MS, easing: ENTER_EASING },
+      );
+      const finish = () => {
+        element.style.overflow = "";
+      };
+      enter.onfinish = finish;
+      enter.oncancel = finish;
+      entering.current = enter;
+    };
+
+    return () => leaving.cancel();
+  }, [isFormOpen, showForm, unstyled]);
+
+  useEffect(() => {
+    if (!hasSwapped.current) return;
+    const target = showForm
+      ? panel.current?.querySelector<HTMLElement>("#fw-title")
+      : trigger.current;
+    target?.focus({ preventScroll: true });
+  }, [showForm]);
+
+  return (
+    <div ref={panel}>
+      <div hidden={showForm}>
+        <div className={cx("fw-toolbar")}>
+          <BoardTabs />
+          <button
+            ref={trigger}
+            type="button"
+            className={cx("fw-btn")}
+            onClick={() => {
+              setJustSubmitted(false);
+              setFormOpen(true);
+            }}
+          >
+            {labels.newRequest}
+          </button>
+        </div>
+        {justSubmitted && (
+          <p className={cx("fw-alert")} role="status">
+            {labels.submitted}
+          </p>
+        )}
+        <FeatureList />
+      </div>
+      {showForm && <SubmitForm />}
+    </div>
   );
 }
 

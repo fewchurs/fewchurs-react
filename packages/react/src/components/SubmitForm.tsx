@@ -7,8 +7,16 @@ import { useSubmitFeature } from "../hooks/useSubmitFeature";
 import { useBoard } from "./BoardContext";
 
 export function SubmitForm(): React.JSX.Element {
-  const { labels, emailField, userEmail, isSubscriber, setFormOpen, setJustSubmitted, cx } =
-    useBoard();
+  const {
+    labels,
+    emailField,
+    userEmail,
+    isSubscriber,
+    isFormOpen,
+    setFormOpen,
+    setJustSubmitted,
+    cx,
+  } = useBoard();
   const { submit, isPending, error } = useSubmitFeature();
 
   const [title, setTitle] = useState("");
@@ -32,8 +40,10 @@ export function SubmitForm(): React.JSX.Element {
           isSubscriber,
         });
         if (!created) return;
-        setTitle("");
-        setDescription("");
+        if (!isFormOpen) {
+          setTitle("");
+          setDescription("");
+        }
         setJustSubmitted(true);
         setFormOpen(false);
       }}
