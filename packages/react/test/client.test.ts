@@ -171,7 +171,8 @@ describe("wrong_app", () => {
 
   it("logs the server's message once", async () => {
     refuseConfig();
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.resetModules();
     const fresh = await import("../src/client/client");
     const freshClient = fresh.createFewchursClient({ baseUrl: BASE_URL, retryDelayMs: 0 });
@@ -181,6 +182,7 @@ describe("wrong_app", () => {
 
     expect(log).toHaveBeenCalledTimes(1);
     expect(log).toHaveBeenCalledWith(`[fewchurs] ${message}`);
+    expect(error).not.toHaveBeenCalled();
   });
 });
 

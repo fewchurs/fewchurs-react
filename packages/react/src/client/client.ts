@@ -262,7 +262,7 @@ function warnAboutKey(error: FewchursError): void {
   if (error.code !== "invalid_key" || warnedAboutKey) return;
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") return;
   warnedAboutKey = true;
-  console.error(
+  console.warn(
     error.status === 403
       ? `[fewchurs] ${error.message}`
       : "[fewchurs] The API key was rejected. Check FEWCHURS_API_KEY (server) or the apiKey passed to FewchursProvider, and that the key is active in your Fewchurs dashboard.",
