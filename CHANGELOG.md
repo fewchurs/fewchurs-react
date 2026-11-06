@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0 — 2026-11-06
+
+- **New request** now shows only the form. The tabs and requests fade out, and they come back after
+  Cancel or a successful submit. The change animates smoothly and respects reduced motion.
+- The sheet no longer has 40px of extra scroll, which could push its heading under the close button.
+
 ## 1.5.0 — 2026-11-06
 
 - The error messages now match the other Fewchurs SDKs. `userMessage` returns the new text, and the

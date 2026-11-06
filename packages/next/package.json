@@ -1,6 +1,6 @@
 {
   "name": "@fewchurs/next",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A server-rendered Fewchurs feature-request board for Next.js, with the API key kept on the server.",
   "license": "SEE LICENSE IN LICENSE",
   "type": "commonjs",
