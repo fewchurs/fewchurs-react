@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0 — 2026-11-06
+
+- **Comments** and **Notify me** now open in a popup. It closes with the × button, Escape, or a click
+  outside, and the sheet stays open behind it. A board opened on one request with
+  `initialFeatureId` still shows that request's comments on the card.
+- The board drops almost all of its borders. Cards, inputs and secondary buttons now use a soft
+  background instead, so the `border` theme value only affects the loading placeholders.
+
 ## 1.6.0 — 2026-11-06
 
 - **New request** now shows only the form. The tabs and requests fade out, and they come back after
