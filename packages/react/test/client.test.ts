@@ -181,8 +181,100 @@ describe("wrong_app", () => {
     await freshClient.getConfig();
 
     expect(log).toHaveBeenCalledTimes(1);
-    expect(log).toHaveBeenCalledWith(`[fewchurs] ${message}`);
+    expect(log).toHaveBeenCalledWith(`[fewchurs] : ${message}`);
     expect(error).not.toHaveBeenCalled();
+  });
+});
+
+describe("logging", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function freshClient() {
+    vi.resetModules();
+    const fresh = await import("../src/client/client");
+    return fresh.createFewchursClient({ baseUrl: BASE_URL, retries: 0, retryDelayMs: 0 });
+  }
+
+  function failConfig(status: number, code: string, message: string) {
+    server.use(
+      http.get(`${BASE_URL}/config`, () =>
+        HttpResponse.json({ error: { code, message } }, { status }),
+      ),
+    );
+  }
+
+  it.each([
+    [500, "internal", "Database is down."],
+    [429, "rate_limited", "Too many requests."],
+    [404, "not_found", "No such feature."],
+    [402, "limit_reached", "Plan limit reached."],
+    [400, "validation_failed", "Title is too short."],
+  ])("logs a %i %s with the server's message", async (status, code, message) => {
+    failConfig(status, code, message);
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await (await freshClient()).getConfig();
+
+    expect(log).toHaveBeenCalledWith(`[fewchurs] : ${message}`);
+  });
+
+  it("explains a rejected key", async () => {
+    failConfig(401, "invalid_key", "Invalid or inactive API key.");
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await (await freshClient()).getConfig();
+
+    expect(log).toHaveBeenCalledWith(
+      expect.stringMatching(/^\[fewchurs\] : The API key was rejected/),
+    );
+  });
+
+  it("logs a network failure", async () => {
+    server.use(http.get(`${BASE_URL}/config`, () => HttpResponse.error()));
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await (await freshClient()).getConfig();
+
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0]?.[0]).toMatch(/^\[fewchurs\] : /);
+  });
+
+  it("logs each different error once", async () => {
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fresh = await freshClient();
+
+    failConfig(500, "internal", "First.");
+    await fresh.getConfig();
+    await fresh.getConfig();
+    failConfig(500, "internal", "Second.");
+    await fresh.getConfig();
+
+    expect(log.mock.calls).toEqual([["[fewchurs] : First."], ["[fewchurs] : Second."]]);
+  });
+
+  it("does not log an aborted request", async () => {
+    server.use(http.get(`${BASE_URL}/config`, () => HttpResponse.error()));
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const controller = new AbortController();
+    controller.abort();
+
+    await (await freshClient()).getConfig(controller.signal);
+
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it("does not log in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    failConfig(500, "internal", "Database is down.");
+    const log = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await (await freshClient()).getConfig();
+
+    expect(log).not.toHaveBeenCalled();
   });
 });
 

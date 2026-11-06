@@ -1,15 +1,25 @@
 "use client";
 
 import { ROADMAP_STATUSES } from "../client/constants";
-import { userMessage } from "../client/errors";
+import type { FewchursError } from "../client/errors";
 import { useFeature } from "../hooks/useFeature";
 import { useFeatures } from "../hooks/useFeatures";
 import { useFollow } from "../hooks/useFollow";
 import { useVote } from "../hooks/useVote";
 import { useBoard, type BoardTab } from "./BoardContext";
 import { FeatureCard } from "./FeatureCard";
+import type { BoardLabels } from "./labels";
 import { FeatureListSkeleton } from "./Skeleton";
 import type { Feature, FeatureSort } from "../types";
+
+function errorCopy(error: FewchursError, labels: BoardLabels): { title: string; detail: string } {
+  if (error.code !== "invalid_key") {
+    return { title: labels.errorTitle, detail: labels.errorDetail };
+  }
+  return error.status === 403
+    ? { title: labels.errorWrongAppTitle, detail: labels.errorWrongAppDetail }
+    : { title: labels.errorInvalidKeyTitle, detail: labels.errorInvalidKeyDetail };
+}
 
 export function FeatureList(): React.JSX.Element {
   const { initialFeatureId } = useBoard();
@@ -60,14 +70,12 @@ function Listing({ excludeId }: { excludeId?: string }): React.JSX.Element {
   });
 
   if (error && visible.length === 0) {
+    const { title, detail } = errorCopy(error, labels);
     return (
       <div className={cx("fw-empty")} role="alert">
-        <p>{userMessage(error)}</p>
-        <button
-          type="button"
-          className={cx("fw-btn", "fw-btn--ghost")}
-          onClick={() => void refresh()}
-        >
+        <p className={cx("fw-empty__title")}>{title}</p>
+        <p className={cx("fw-empty__detail")}>{detail}</p>
+        <button type="button" className={cx("fw-btn-text")} onClick={() => void refresh()}>
           {labels.retry}
         </button>
       </div>

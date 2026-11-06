@@ -104,6 +104,12 @@ type FewchursError =
 A server `wrong_app` response arrives as `invalid_key` with status `403`, and `error.message` names
 the domain to add to your app in the Fewchurs dashboard.
 
+When the board can't load, it shows a short title, a friendly line and a **Try again** button:
+"Invalid API key" for a rejected key, "Wrong platform" for `wrong_app`, and "Something went wrong"
+for anything else. Change the wording through `labels`, such as `errorInvalidKeyTitle` and
+`errorInvalidKeyDetail`. Outside production, each failed request is also logged once to the console
+as `[fewchurs] : <details>`.
+
 ## Customization
 
 **Level 1 — defaults.** `<FewchursBoard />` renders tabs, the list, voting, comments, the submit

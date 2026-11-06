@@ -88,6 +88,7 @@
 
 .fewchurs .fw-tab:focus-visible,
 .fewchurs .fw-btn:focus-visible,
+.fewchurs .fw-btn-text:focus-visible,
 .fewchurs .fw-vote:focus-visible,
 .fewchurs .fw-input:focus-visible,
 .fewchurs .fw-link:focus-visible {
@@ -316,6 +317,25 @@
   color: var(--fw-text);
   font-weight: 600;
   margin: 0 0 0.25rem;
+}
+
+.fewchurs .fw-empty__detail {
+  margin: 0 0 0.75rem;
+}
+
+.fewchurs .fw-btn-text {
+  padding: 0.45rem 0.75rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--fw-text);
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
+}
+
+.fewchurs .fw-btn-text:hover {
+  background: var(--fw-muted);
 }
 
 .fewchurs .fw-comments {

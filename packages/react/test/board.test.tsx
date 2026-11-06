@@ -88,6 +88,58 @@ describe("board", () => {
     expect(await screen.findByText("No feature requests yet")).toBeInTheDocument();
   });
 
+  it.each([
+    [401, "invalid_key", "Invalid API key", "needs to check its setup"],
+    [403, "wrong_app", "Wrong platform", "isn't set up for this site or app"],
+    [500, "internal", "Something went wrong", "Please try again"],
+    [429, "rate_limited", "Something went wrong", "Please try again"],
+  ])("shows a %i %s as a title and friendly detail", async (status, code, title, detail) => {
+    server.use(
+      http.get(`${BASE_URL}/features`, () =>
+        HttpResponse.json(
+          { error: { code, message: "This API key is not set up for secret-host.com." } },
+          { status },
+        ),
+      ),
+    );
+    renderBoard();
+
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByText(title)).toHaveClass("fw-empty__title");
+    expect(alert).toHaveTextContent(detail);
+    expect(alert).not.toHaveTextContent("secret-host.com");
+    expect(within(alert).getByRole("button", { name: "Try again" })).toHaveClass("fw-btn-text");
+  });
+
+  it("loads the list when Try again works", async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.get(
+        `${BASE_URL}/features`,
+        () =>
+          HttpResponse.json({ error: { code: "invalid_key", message: "bad" } }, { status: 401 }),
+        { once: true },
+      ),
+    );
+    renderBoard();
+
+    await user.click(await screen.findByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("Dark mode")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("lets the error text be changed", async () => {
+    server.use(
+      http.get(`${BASE_URL}/features`, () =>
+        HttpResponse.json({ error: { code: "invalid_key", message: "bad" } }, { status: 401 }),
+      ),
+    );
+    renderBoard(<FewchursBoard labels={{ errorInvalidKeyTitle: "Not available" }} />);
+
+    expect(await screen.findByText("Not available")).toBeInTheDocument();
+  });
+
   it("offers a retry when the list fails", async () => {
     server.use(
       http.get(`${BASE_URL}/features`, () =>

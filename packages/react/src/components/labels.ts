@@ -22,6 +22,12 @@ export interface BoardLabels {
   loading: string;
   loadMore: string;
   retry: string;
+  errorInvalidKeyTitle: string;
+  errorInvalidKeyDetail: string;
+  errorWrongAppTitle: string;
+  errorWrongAppDetail: string;
+  errorTitle: string;
+  errorDetail: string;
   comments: string;
   commentPlaceholder: string;
   postComment: string;
@@ -57,6 +63,14 @@ export const DEFAULT_LABELS: BoardLabels = {
   loading: "Loading…",
   loadMore: "Load more",
   retry: "Try again",
+  errorInvalidKeyTitle: "Invalid API key",
+  errorInvalidKeyDetail:
+    "We can't connect to this board right now. The owner of this site needs to check its setup.",
+  errorWrongAppTitle: "Wrong platform",
+  errorWrongAppDetail:
+    "This board isn't set up for this site or app yet. Its owner needs to add it in Fewchurs.",
+  errorTitle: "Something went wrong",
+  errorDetail: "We couldn't load the requests. Please try again.",
   comments: "Comments",
   commentPlaceholder: "Add a comment",
   postComment: "Post",

@@ -125,7 +125,9 @@ export function createFewchursClient(options: FewchursClientOptions = {}): Fewch
           await delay(retryDelayMs);
           continue;
         }
-        return { ok: false, error: networkError(messageOf(error)) };
+        const failure = networkError(messageOf(error));
+        logError(failure);
+        return { ok: false, error: failure };
       }
 
       if (response.ok) {
@@ -139,7 +141,7 @@ export function createFewchursClient(options: FewchursClientOptions = {}): Fewch
       }
 
       const failure = errorFromResponse(response.status, await readJson(response));
-      warnAboutKey(failure);
+      logError(failure);
       return { ok: false, error: failure };
     }
 
@@ -256,15 +258,16 @@ function messageOf(error: unknown): string {
 // `process.env.NODE_ENV` inline, so the check costs nothing in a production build.
 declare const process: { env?: Record<string, string | undefined> } | undefined;
 
-let warnedAboutKey = false;
+const INVALID_KEY_HELP =
+  "The API key was rejected. Check FEWCHURS_API_KEY (server) or the apiKey passed to FewchursProvider, and that the key is active in your Fewchurs dashboard.";
 
-function warnAboutKey(error: FewchursError): void {
-  if (error.code !== "invalid_key" || warnedAboutKey) return;
+const loggedErrors = new Set<string>();
+
+function logError(error: FewchursError): void {
   if (typeof process !== "undefined" && process.env?.NODE_ENV === "production") return;
-  warnedAboutKey = true;
-  console.warn(
-    error.status === 403
-      ? `[fewchurs] ${error.message}`
-      : "[fewchurs] The API key was rejected. Check FEWCHURS_API_KEY (server) or the apiKey passed to FewchursProvider, and that the key is active in your Fewchurs dashboard.",
-  );
+  const isInvalidKey = error.code === "invalid_key" && error.status === 401;
+  const detail = isInvalidKey ? INVALID_KEY_HELP : error.message;
+  if (loggedErrors.has(detail)) return;
+  loggedErrors.add(detail);
+  console.warn(`[fewchurs] : ${detail}`);
 }
