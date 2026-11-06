@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 — 2026-11-06
+
+- When the board can't load, it shows a title, a friendly line and a text **Try again** button:
+  "Invalid API key", "Wrong platform" or "Something went wrong". The wording can be changed through
+  `labels`.
+- Outside production, every failed request is logged once to the console as `[fewchurs] : <details>`.
+
 ## 1.3.0 — 2026-11-06
 
 - `FewchursButton` takes `floating`, which keeps the button on the bottom right of the page, or
