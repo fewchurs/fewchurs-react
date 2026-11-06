@@ -18,7 +18,8 @@ import "@fewchurs/react/styles.css";
 
 Add your domain to your app in the Fewchurs dashboard. The API key only works there.
 
-`FewchursButton` shows only a button that opens the board in a sheet. `FewchursBoardDialog` renders
+`FewchursButton` shows only a button that opens the board in a sheet, and `floating` keeps it on
+the corner of the page. `FewchursBoardDialog` renders
 the same board in a modal or a sheet (`open`, `onClose`, `variant`, plus every board prop), and
 `initialFeatureId` opens the board on one request with its comments expanded.
 

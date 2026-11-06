@@ -12,7 +12,7 @@ export default function Home() {
       <p>
         <Link href="/feedback">Open the board →</Link>
       </p>
-      <FewchursButton />
+      <FewchursButton floating />
     </main>
   );
 }

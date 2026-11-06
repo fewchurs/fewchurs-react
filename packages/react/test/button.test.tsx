@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, it } from "vitest";
@@ -77,8 +77,49 @@ describe("FewchursButton", () => {
     expect(await screen.findByRole("heading", { name: "Ideas" })).toBeInTheDocument();
   });
 
+  it("floats on the right, or on the left when asked", () => {
+    const { unmount } = renderButton(<FewchursButton floating />);
+    const right = screen.getByRole("button", { name: "Feedback" });
+    expect(right).toHaveClass("fw-launcher--floating");
+    expect(right).not.toHaveClass("fw-launcher--left");
+    unmount();
+
+    renderButton(<FewchursButton floating="left" />);
+    expect(screen.getByRole("button", { name: "Feedback" })).toHaveClass(
+      "fw-launcher--floating",
+      "fw-launcher--left",
+    );
+  });
+
+  it("does not float by default", () => {
+    renderButton();
+    expect(screen.getByRole("button", { name: "Feedback" })).not.toHaveClass(
+      "fw-launcher--floating",
+    );
+  });
+
+  it("adds a new request from the form inside the sheet", async () => {
+    const user = userEvent.setup();
+    renderButton(<FewchursButton floating />);
+
+    await user.click(screen.getByRole("button", { name: "Feedback" }));
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).queryByLabelText(/title/i)).not.toBeInTheDocument();
+
+    await user.click(await within(sheet).findByRole("button", { name: "New request" }));
+    await user.type(within(sheet).getByLabelText(/title/i), "Keyboard shortcuts");
+    await user.click(within(sheet).getByRole("button", { name: "Submit request" }));
+
+    expect(await within(sheet).findByRole("status")).toHaveTextContent(
+      "Thanks — your request is in.",
+    );
+    expect(within(sheet).queryByLabelText(/title/i)).not.toBeInTheDocument();
+    const submitted = requests.find((request) => request.method === "POST");
+    expect(await submitted?.json()).toMatchObject({ title: "Keyboard shortcuts" });
+  });
+
   it("drops its class when unstyled", () => {
-    renderButton(<FewchursButton unstyled />);
+    renderButton(<FewchursButton unstyled floating />);
     expect(screen.getByRole("button", { name: "Feedback" })).not.toHaveAttribute("class");
   });
 

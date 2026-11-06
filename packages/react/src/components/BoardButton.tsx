@@ -14,6 +14,13 @@ export interface FewchursButtonProps extends Omit<
   className?: string;
   style?: CSSProperties;
   ariaLabel?: string;
+  floating?: boolean | "left" | "right";
+}
+
+function launcherClasses(floating: FewchursButtonProps["floating"]): string {
+  if (!floating) return "fw-launcher";
+  const side = floating === "left" ? " fw-launcher--left" : "";
+  return `fw-launcher fw-launcher--floating${side}`;
 }
 
 export function FewchursButton({
@@ -21,11 +28,14 @@ export function FewchursButton({
   className,
   style,
   ariaLabel,
+  floating = false,
   ...board
 }: FewchursButtonProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
-  const classes = [board.unstyled ? "" : "fw-launcher", className].filter(Boolean).join(" ");
+  const classes = [board.unstyled ? "" : launcherClasses(floating), className]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <>

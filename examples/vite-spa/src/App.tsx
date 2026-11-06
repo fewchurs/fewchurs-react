@@ -12,7 +12,7 @@ export function App() {
         baseUrl={import.meta.env.VITE_FEWCHURS_BASE_URL}
         onEvent={(event) => console.log("[fewchurs]", event.name)}
       >
-        <FewchursButton theme={{ primary: "#ed5f18" }} />
+        <FewchursButton floating theme={{ primary: "#ed5f18" }} />
         <FewchursBoard
           tabs={["top", "new"]}
           theme={{ primary: "#ed5f18", radius: 12 }}

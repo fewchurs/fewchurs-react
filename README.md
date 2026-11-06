@@ -194,6 +194,15 @@ import "@fewchurs/react/styles.css";
 </FewchursProvider>;
 ```
 
+Add `floating` to keep the button on the bottom right of every page, or `floating="left"` for the
+bottom left. Put it in your root layout so it shows everywhere:
+
+```tsx
+<FewchursButton floating />
+```
+
+The board in the sheet has its **New request** button, which shows the form for adding a request.
+
 Pass your own label as children, such as `<FewchursButton>Suggest a feature</FewchursButton>`.
 `className` and `style` go on the button, and every other `FewchursBoard` prop goes to the board.
 

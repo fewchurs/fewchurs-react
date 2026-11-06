@@ -21,6 +21,12 @@ describe("FewchursButton", () => {
     expect(element.props.children.props.children).toBe("Ideas");
   });
 
+  it("passes floating to the button", async () => {
+    const element = await FewchursButton({ floating: "left" });
+
+    expect(element.props.children.props.floating).toBe("left");
+  });
+
   it("uses a custom path and device id", async () => {
     const element = await FewchursButton({ apiPath: "/fb/", deviceId: () => "device-9" });
 
